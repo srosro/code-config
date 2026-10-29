@@ -1,0 +1,15 @@
+# Claude Code per-session runtime state — pid/lockfile, not portable across machines.
+.claude/scheduled_tasks.lock
+
+# Implementation plans live in the working tree but aren't versioned.
+# (Plans are scratch; commit-worthy decisions land in code or PR descriptions.)
+docs/plans/
+
+# Keepitdry runtime state — Chroma vector DB + file-hash manifest, regenerated per-machine.
+.keepitdry/
+
+# roborev scratch findings — ephemeral working notes, never committed.
+roborev-finding-*.md
+
+# Python bytecode the hooks write into the prod clone at runtime — kept it tripping the deploy dirty-tree guard.
+__pycache__/

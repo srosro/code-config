@@ -1,0 +1,26 @@
+# Hard stop on git worktree CREATION. The numbered ~/Hacking/<repo><slot>
+# checkout a session begins in is the isolation boundary (see codex/AGENTS.md
+# "Development and deployment"); worktrees off a slot let one agent branch over
+# and move HEAD under another in the same .git. A `forbidden` prefix rule is
+# rejected before execution in every approval/sandbox mode, --yolo included.
+#
+# Scope: `add` ONLY. `git worktree remove|list|prune` stay allowed — cleanup and
+# recovery need them. Known residual gap (prose in AGENTS.md still covers it):
+# a prefix rule can't see `git -C <dir> worktree add`, and Codex applies rules to
+# the whole `bash -lc "<script>"` string when a script uses features it can't
+# safely split, so those forms bypass this rule.
+prefix_rule(
+    pattern = ["git", "worktree", "add"],
+    decision = "forbidden",
+    justification = "Never create git worktrees. Work in the numbered ~/Hacking/<repo><slot> checkout the session began in, or run `tc claim <repo> <branch>` for a clean slot.",
+    match = [
+        "git worktree add ../plow-x",
+        "git worktree add -b feat/x ../plow-x origin/main",
+    ],
+    not_match = [
+        "git worktree remove ../plow-x",
+        "git worktree list",
+        "git worktree prune",
+        "git status",
+    ],
+)
