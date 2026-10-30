@@ -2445,6 +2445,14 @@ Same operating-point logic applied one step earlier — at *whether to write cod
 
 **Next instance:** any session that ends an investigation holding a diagnosed defect plus a known remedy — a latch tool-copy fix, a kwr rubric correction, a dashboard regression — where the next move is `gh issue create` + `gh pr create` and the only genuine gate is the merge.
 
+### +1 — 2026-10-29 · str4-turnover-readiness · the source you JUST cited answers the question you're about to close on
+
+**Change:** Before sending a turn that ends in a question, check the question against every doc/code path cited earlier in that same message; if one answers it, play the answer back ("here's what's documented — is that how it really goes?") and ask about the actual gap instead.
+
+**Why (autonomy):** Stop — in a brainstorm I cited a skill's early-check-in rules (`property-guest-messaging/SKILL.md:40-42`) and in the same message asked the operator "who do you check with, and in what order?" — which those exact lines answer. Prior authority — the cited file was already read and quoted. Unblock — the operator pointed back at the lines I had cited.
+
+**Next instance:** a design or debugging turn in any repo that quotes a runbook, config file or README and then asks the operator to describe the process that file already specifies (a deploy order, an escalation path, a retry policy).
+
 ## [removes-handback] A least-privilege improvement you spot mid-task is not a precondition — reuse the existing credential when blast radius is unchanged, and narrow at the boundary change
 **Change:** Add to `CLAUDE.md` § Lean Less Conservative: when wiring a new consumer (repo, service, job) to an existing credential, and you notice the credential is broader than the new consumer strictly needs, do NOT convert that observation into a blocker ("first mint a narrowed service account, then…"). Ask what the change does to **blast radius**: if the new consumer sits inside the same trust boundary as the existing ones — same org, same operators, same push access — reusing the credential adds no reachable principal, so reuse it now and file the narrowing. Bind the narrowing to the moment the boundary *actually* moves (the repo going public, an outside collaborator gaining write, the credential crossing an org edge) — that is when the calculus changes and the work has a real trigger instead of a vague "we should." Stating a hardening as a gate you impose on yourself is the same over-conservatism as absorbing a reviewer's YAGNI guard; it just wears a security costume.
 **Why (autonomy):** *The stop* — handing back the plow-mac extraction, I wrote that the new repo should get a *newly minted, narrowed* 1Password service account rather than the existing one, and listed it as a thing the operator had to do. *The unblock* — "why have a new token?" The honest answer was that it changed nothing: the repo was private, only org members could dispatch its workflows, and every one of them already held the same token through the source monorepo. The narrowing is real work, but its trigger is the public flip, not this task. Reused the existing token, set it myself, and noted the narrowing against the visibility change instead.
@@ -6719,3 +6727,12 @@ its test, not the full rationale, on the first pass.
 **Why (autonomy):** Stop — on plow-pbc/str-hermes-agent#114 (2026-10-28, str-hermes-agent2 cook session) the converged PR's watcher kept re-arming and each wake reported; the dispatcher first asked for state-change-only reports, then had to ask again to stop the watcher entirely because silent wakes still pinged them. Prior authority — the PR was converged and labeled, the merge was stated to be the human's, and the dispatcher had already said they would relay the merge. Unblock — two operator messages ("only report on a real state change", "stop the watcher entirely").
 
 **Next instance:** A sous-dispatched cook babysits a code-config or plow PR to convergence; the sous says the merge will come as a new ticket. The cook stops its Monitor at convergence instead of ticking every 30 min, and the merge sequel (`/cleanup`, deploy) runs when the ticket arrives — as it did here (#114 merged → re-ticketed → deploy + `/cleanup`).
+
+## [removes-handback] A host/tool failing is not "unreachable" until you've re-scanned the capabilities that surfaced mid-session
+
+**Change:** Add to `CLAUDE.md § Verify Before Claiming Done` ("It can't run here" bullet): when a tool call fails with an unreachable/not-connected error, re-check the current skill and tool list — skills and deferred tools can appear mid-session in system reminders — for another path to the same host before telling the operator it's offline or asking them to fix it.
+
+**Why (autonomy):** Stop — the Plow Latch MCP returned "mba is not connected", and I told the operator their Mac was offline and asked them to bring it online. Prior authority — a `latch` skill (the CLI that replaced the MCP, `--host mba`) had been surfaced in a system reminder earlier that session. Unblock — the operator asked whether I'd noticed the move from the MCP to the CLI; the CLI worked on the first call.
+
+**Next instance:** any integration migrated from an MCP server to a CLI or skill (a Google Workspace connector, a browser driver, a deploy tool) where the old tool still answers with a connectivity error in long-lived sessions.
+
