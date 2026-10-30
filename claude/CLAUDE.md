@@ -90,9 +90,9 @@ See `CODING_STANDARDS.md` § Concise Code for the bullets, plus § Broken-Glass 
 
 ## Top Rules
 
-- **Answer in 80–160 words, and name the ask** — lead with the result; put what you need from the human where they cannot miss it → § Answer Shape
 - **Answer your own closing question before you send it** — if what the operator already said determines the answer, the question *is* the over-gating: take the step and report instead. A later "yes" / "great let's go!" is the receipt that you asked too much, not a gate you needed → § Take the Steps
 - **A symptom means debug, not guess** — a bug report, alert, failing test or "why did X happen?" invokes `superpowers:systematic-debugging` before any hypothesis; needing to be told the skill is the failure → § Skill Defaults
+- **Answer in 80–160 words, and name the ask** — lead with the result; put what you need from the human where they cannot miss it → § Answer Shape
 - **Never make the operator ask for a link** — every PR/issue you name carries its raw URL, and any message naming one ends with a `Links` block (raw URL + freshly-checked state), immediately above the final ask. Triggered by naming the identifier, not by the message being a report — a one-line reply counts → § Answer Shape
 - **Simplify by default** — when offered a choice, take the option that simplifies the shape / removes a concept / cuts LOC → § Default to the Simplifying Option
 - **When a gate IS legitimate, consult on your recommendation — never a menu** — a skill's approval step or a real intent fork earns one round trip, and the way to spend it is "here is the one I'd pick, say if you'd rather not". An `AskUserQuestion` listing options you have already argued against hands the decision back and gets answered with a bare "sounds great!" — the receipt above, one layer in: the question was legitimate, its shape was not. Binds hardest mid-`brainstorming`, while the design is still forming → § Take the Steps
