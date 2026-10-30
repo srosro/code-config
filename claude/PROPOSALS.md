@@ -6725,3 +6725,66 @@ its test, not the full rationale, on the first pass.
 
 **Next instance:** any integration migrated from an MCP server to a CLI or skill (a Google Workspace connector, a browser driver, a deploy tool) where the old tool still answers with a connectivity error in long-lived sessions.
 
+## A 1:1 → 1:N data change gets an explicit consumer-sweep task — grep every reader of the old cardinality, table it, fix each with a two-row test
+
+**Change:** Add to `CLAUDE.md § Take the Steps`: when a change turns a one-per-X relation into many (one handle per account → several, one device per user → several), the plan carries a dedicated audit task — grep every reference to the model/column, classify each site (resolve A→B, resolve B→A, is-this-the-owner, config read/write, exactly-one query), give each a verdict with a reason in a table that ships in the PR body, and fix every `fix` row with a test that fails on `main` with two rows. The design doc's recon list is a starting point, never the sweep.
+
+**Why (autonomy):** Stop — the design listed seven owner-comparison sites from one recon pass; the operator's overnight mandate had to spell out "any time we look up and message a user, how does that work with multiple identities?" Prior authority — the spec itself stated the cardinality change. Unblock — an explicit Explore sweep found 11 fix rows (four not in the design), and three independent reads later found two more (shared OTP key, WhatsApp retirement) in the same class (plow-pbc/plow#2604, 2026-10-30).
+
+**Next instance:** a Latch change that lets one account register several Macs where every path assumed `relay_devices` had one row per user; a billing change from one card to many.
+
+## Never hand-insert a row the product creates through its own flow as a prod data fix — recommend the product path or a code change
+
+**Change:** Add to `CLAUDE.md § Take the Steps` (next to the restore-point bullet): a prod "data fix" that hand-crafts a row the product normally creates itself (a chat, a participant, a grant, a session) is non-standard — the creating code carries invariants the row alone does not (owner match, verification stamps, side files). Before proposing one, trace every consumer that re-derives meaning from that row and show the user would be treated identically to the product-created case; otherwise name the standard path that reaches the same state, or put the fix in code under review.
+
+**Why (autonomy):** Stop — I proposed inserting a `chats` + `chat_participants` row by hand for a stuck owner; the operator pushed back as "non-standard" and was right: ownership is re-derived from `users.provider_key` at read time, so the hand-made row would have seated him as a non-owner in his own agent's thread. Prior authority — `chat_owner_keys` was readable and showed the invariant. Unblock — the standard path (text from the phone the account is named by) plus a code fix under review (plow-pbc/plow#2604).
+
+**Next instance:** restoring a "lost" OAuth connection by inserting a `connector_tokens` row; un-deleting an agent by flipping `deleted_at` on a row whose VM state is gone.
+
+## [removes-handback] Archive, never delete: `mv` session artifacts (SDD workspaces, reports, scratch) to `/tmp` instead of `rm`
+
+**Change:** Add to `CLAUDE.md § Git Safety` (beside "never delete untracked files"): when a skill or process ends with "delete the workspace / clean up the scratch dir", move it to `/tmp/<name>-<date>` and name the destination in the final message. This overrides skill text that says `rm -rf` (superpowers `subagent-driven-development` § Finish, cleanup's own tmp handling).
+
+**Why (autonomy):** Stop — the operator had to interject mid-session, unprompted, "instead of rm, let's mv to /tmp" as the SDD finish step approached (2026-10-30). Prior authority — the global archive-don't-delete rule for deployments already expressed the preference; it did not reach session artifacts. Unblock — the operator's one-line directive.
+
+**Next instance:** a `/cleanup` run deleting a stale review package; a test harness that `rm -rf`s its run directory on success; a deploy skill that removes an archived clone after verifying.
+
+## [removes-handback] A rollout check the spec names ("verify live after deploy") is usually provable pre-merge on the local stack plus a real agent container — do it, don't defer it to the human's merge
+
+**Change:** Add to `CLAUDE.md § Verify Before Claiming Done` (the "load-bearing assumption" bullet): before handing a PR back as "verified except for the post-deploy check", build the hybrid locally — the branch API on the scenario/compose stack, the real agent image from the public registry pointed at it over `host.docker.internal` with a credential minted on that stack, the real model through the API proxy — and drive the user-visible flow end to end. The fake runtime proving only its owner-phone path is not a reason to stop; it is the reason to add the real container.
+
+**Why (autonomy):** Stop — I reported "the only thing a deploy still proves is a real model answering" and asked whether to merge or build the hybrid. Prior authority — the overnight mandate said done means "confident there aren't unexpected bugs"; `plow-agents` already documented `PLOW_API_BASE` for local compose and the scenario stack already called the real model (`test_llm.py`). Unblock — the stop hook refused the deferral three times; the hybrid took one agent ~6 minutes and answered `4`, `12`, `Paris` (plow-pbc/plow#2604, 2026-10-30).
+
+**Next instance:** a hermes-plugin-plow change whose rollout says "smoke on exe.dev after the image bump" — run the plugin against the local API with the real base image first; a Latch relay change "verified on a real Mac after release" — drive the relay from a local plowd container.
+
+## [removes-handback] In a live brainstorm, answer with the questions the existing evidence supports — never hold the turn for a background recon agent
+
+**Change:** Add to `CLAUDE.md § Take the Steps`: when the operator asks "what questions do you have?" mid-conversation while a recon agent is running, reply in the same turn with the questions already grounded in what's known, marking which ones the pending data will sharpen; fold the agent's result in when it lands. A "holding my questions until the numbers land" turn is a hand-back.
+
+**Why (autonomy):** Stop — twice deferred questions pending a prod-traction agent; the operator replied "What are we waiting for? What questions do you have?" (2026-10-23). Prior authority — the first-pass questions did not depend on the numbers. Unblock — the operator's nudge.
+
+**Next instance:** a design review where a dependency-graph scan is running in the background and the operator asks for the open design questions now.
+
+## [removes-handback] A question whose answer is itself the decision is a hand-back — after ~3 rounds, state the assumption and recommend
+
+**Change:** Add to `CLAUDE.md § Take the Steps` (the "lead with a recommendation" bullet): in strategy or design conversations, once the open questions are ones only the operator can answer by deciding ("what would you own?", "swing for the fences or not?"), stop asking; give the recommendation with its gate conditions and let them push back. Budget roughly three question rounds, then deliver.
+
+**Why (autonomy):** Stop — several follow-up questions were restatements of the one the operator had asked me to answer; he said they "feel like different ways to ask the same question I'm asking you" (2026-10-23). Prior authority — the evidence for a recommendation was already in the conversation. Unblock — the operator's observation.
+
+**Next instance:** a pricing-model discussion where "which tier should be default?" is the thing the operator asked for a recommendation on.
+
+## [removes-handback] A bot-walled or JS-only fetch is not "unavailable" — retry in a real browser tool in the same turn
+
+**Change:** Add to `CLAUDE.md § Verify Before Claiming Done` ("It can't run here" bullet): a `WebFetch` 402/403/empty render on a walled site (x.com, a JS app) is a tool limit, not a capability limit; open it with the browser tool available in the session (Playwright MCP, the chrome/built-in browser skills) before telling the operator the content couldn't be read.
+
+**Why (autonomy):** Stop — reported "X blocked the fetch, couldn't read the post"; the operator asked why I hadn't used Safari or Chrome. Prior authority — a browser tool was listed in the session. Unblock — the operator's question.
+
+**Next instance:** a LinkedIn or Notion page a research task needs; a vendor status page rendered client-side.
+
+## Strategy conversations with the operator: argue from what becomes scarce and where his edge is — prior art is context, and his biography is not the lens
+
+**Change:** Add to `CLAUDE.md § Take the Steps` (consultation shape): when the operator floats a thesis, do not lead with "X tried this and failed" or route the point through his past companies ("which of yours would have survived?"); state the pattern plainly as your own observation, ask one concrete question about the idea in front of you (first user, single-player value, which version), and test the thesis on what becomes scarce when code is free and where his unfair advantage sits. Cite prior art only to extract the mechanism of its failure.
+
+**Why (autonomy):** Stop — a critique led with a Pioneer/Indie.vc "this failed before" headline, and a separate point was routed through his résumé; he answered "not sure… why is that relevant?" and moved on (2026-10-23). Prior authority — his stated framing (software cost → 0, everything is being tried) was already on the table. Unblock — two corrections in one conversation.
+
+**Next instance:** any founder-strategy or product-thesis conversation, in any repo, where the operator asks for a critique of a new direction.
