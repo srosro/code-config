@@ -5801,6 +5801,14 @@ Evidence: plow-pbc/life-assistant-hermes-agent#189 (e6edddf fold-in, merged d6c3
 **Why (autonomy):** Stop — I created a label and gave its listing URL once. The next two turns refined the design and carried only the per-issue `Links` block, so the operator had to ask "what's the link to all the issues?". Prior authority — § Answer Shape's raw-URL rule and this proposal's "rides every turn" +1, plus the operator's own statement that the link was for forwarding. Unblock — the operator asking for it again.
 **Next instance:** a filtered PR list for a reviewer, a Grafana or Vercel dashboard link for a teammate, or a shared doc URL during a multi-turn edit — wherever the operator's next action is to paste one link somewhere else.
 
+### +1 — 2026-10-29 · code-config1-public-split · a one-line quiet-tick reply naming a PR is the shape where the rule drops
+
+**Change:** The trigger is naming the identifier, not the message being a report. A two-line Monitor-tick reply ("overlay PR #2 unchanged") owes the Links block exactly as a ledger does; if the reply feels too short to deserve one, that is the tell it will be missed.
+
+**Why (autonomy):** Stop — two consecutive quiet-tick replies named the overlay PR with no URL; the operator's next message was "what's the pr url?". Prior authority — § Answer Shape's Links-block bullet already says the trigger is naming an identifier and that recurrences have all been short replies. Unblock — the operator asked for the link, a round-trip the rule exists to remove.
+
+**Next instance:** any babysit or `/loop` wake in another repo that reports "no change" on a PR by number — the reply ends with the Links block regardless of length.
+
 ## Survey prior art (spec, SDK, reference impl, in-repo precedent) before committing to a new wire shape or seam — extend an existing pattern and say which
 
 **Change:** When a fix introduces a new shape — a content-block type, an envelope, a seam — run a short prior-art pass before dispatching implementation: the upstream spec for the wire shape, the SDK's types, one reference implementation that does the same job, and `git log --grep`/grep for the in-repo precedent. Record the chosen pattern and the runners-up in the plan's Architecture line and the PR body. Extend the existing pattern where one exists; a new mechanism beside an old one needs a stated reason.
