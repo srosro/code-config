@@ -1,0 +1,10 @@
+# Repos a reviewer of THIS repo may search and cite, materialized under
+# .siblings/<owner>/<repo>. One per line.
+#
+# code-config-private is the operator overlay installed on top of this repo:
+# the fleet host table lib/fleet.sh reads, OPERATOR.md that CLAUDE.md imports,
+# and the operator-only skills. A reviewer that cannot see it reads the
+# installer's other half as missing. Two-way by the operator's decision
+# (2026-10-29); a reviewer of a public PR can therefore cite that private
+# repo, so keep citations to shape and contract, never its data rows.
+srosro/code-config-private
