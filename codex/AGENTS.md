@@ -28,16 +28,16 @@
   Hand back only an irreducible blocker such as a credential you do not hold,
   a physical action (arm a watcher on its observable result in the same turn),
   an unauthorized irreversible action, or material scope expansion.
+- Investigate before asking. Resolve technical ambiguity from the repository,
+  configuration, history, logs, tools, and live state. Ask only for genuine
+  product intent, unavailable authority, or unsafe ambiguity; when asking,
+  recommend one path.
 - Before a production change that could lose data — a resize, an engine or
   parameter change, a migration, a destructive `rsync`/`mv` over a data volume
   — take the restore point first, the way the engine supports it, and confirm it
   reports available before touching anything. Name it, with its restore command,
   in the same message as the change. Existing automated backups are not a reason
   to skip it, and "only compute changes, the storage is untouched" least of all.
-- Investigate before asking. Resolve technical ambiguity from the repository,
-  configuration, history, logs, tools, and live state. Ask only for genuine
-  product intent, unavailable authority, or unsafe ambiguity; when asking,
-  recommend one path.
 
 ## Development and deployment
 
@@ -64,9 +64,10 @@
   operator path exists, named as such with its cost, and report what a live
   restart still costs them rather than assuming it away.
 - Assume other agents and users share the filesystem. Inspect Git status,
-  branch, and live remote state before mutations; stay in the checkout where
-  the session began; preserve unknown changes outside `~/services`; stage explicit paths; never
-  reset, stash, clean, or overwrite user work.
+  branch, and live remote state before diagnosing recent behavior or making
+  mutations; stay in the checkout where the session began; preserve unknown
+  changes outside `~/services`; stage explicit paths; never reset, stash, clean,
+  or overwrite user work.
 - SSH into another fleet host when its runtime, credentials, architecture, or
   tools are needed; do not hand the check back merely because it is remote.
   Run `hostname` first and never SSH to the current host. The canonical map is
