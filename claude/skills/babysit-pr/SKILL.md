@@ -12,9 +12,9 @@ Watch a GitHub PR through review until it reaches a terminal state — merged, c
 ## Priority
 
 - `§ Guardrails (override everything below if conflicting)` *(pinned)*
-- `§ Step 6.6 — Iterate to convergence (verified rounds, intent-fenced)`
 - `§ Step 6.7 — Convergence gate + REVIEW_REQUIRED hand-off`
 - `§ Step 7 — Schedule the next pass or exit`
+- `§ Step 6.6 — Iterate to convergence (verified rounds, intent-fenced)`
 - `§ Step 5 — Triage each unreplied comment`
 - `§ Step 6.8 — Size ledger (every round)`
 - `§ Step 6.5 — Loop stall detection (escalate to architectural question)`
