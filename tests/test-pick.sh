@@ -22,11 +22,13 @@ case "$1 $2" in
   *) exit 0;;
 esac
 EOF
-# Fake tmux: emit pane lines (path|command) from TMUX_PANES.
+# Fake tmux servers: each file in the socket dir is one server, listing its panes
+# (path|command). `panes <server> <lines>` sets one; `tmux -S <file>` reads it.
+export TMUX_TMPDIR="$SBX/sock"; SOCKS="$TMUX_TMPDIR/tmux-$(id -u)"; mkdir -p "$SOCKS"
+panes() { printf '%b' "$2" >"$SOCKS/$1"; }
 cat >"$SBX/bin/tmux" <<'EOF'
 #!/usr/bin/env bash
-[ "$1 $2" = "list-panes -a" ] || exit 0
-printf '%b' "${TMUX_PANES:-}"
+[ "$1 $3 $4" = "-S list-panes -a" ] && cat "$2"
 EOF
 chmod +x "$SBX/bin/git" "$SBX/bin/tmux"
 export PATH="$SBX/bin:$PATH"
@@ -40,12 +42,24 @@ out=$(export GIT_DIRTY_plow0="M f"; _tcp plow plow wakeup)
 assert_eq "plow1-wakeup $SBX/Hacking/plow1" "$out" "skips dirty slot 0"
 
 # slot 0 on feature branch + plow1 busy (claude) → lands plow2
-out=$(export GIT_BRANCH_plow0=feat/x TMUX_PANES="$SBX/Hacking/plow1|claude\n"; _tcp plow plow wakeup)
+panes default "$SBX/Hacking/plow1|claude\n"
+out=$(export GIT_BRANCH_plow0=feat/x; _tcp plow plow wakeup)
 assert_eq "plow2-wakeup $SBX/Hacking/plow2" "$out" "skips not-on-main and busy"
 
 # pane in plow1 but just a shell → plow1 counts as free
-out=$(export GIT_BRANCH_plow0=feat/x TMUX_PANES="$SBX/Hacking/plow1|zsh\n"; _tcp plow plow wakeup)
+panes default "$SBX/Hacking/plow1|zsh\n"
+out=$(export GIT_BRANCH_plow0=feat/x; _tcp plow plow wakeup)
 assert_eq "plow1-wakeup $SBX/Hacking/plow1" "$out" "idle shell pane is not busy"
+
+# a kitchen cook on its own `-L ck-*` server makes the slot busy too
+panes ck-boss "$SBX/Hacking/plow1|claude\n"
+out=$(export GIT_BRANCH_plow0=feat/x; _tcp plow plow wakeup)
+assert_eq "plow2-wakeup $SBX/Hacking/plow2" "$out" "a pane on another tmux server is busy"
+# ...even when a later server's query fails under tc's pipefail (a dir makes the fake's cat fail)
+mkdir "$SOCKS/zz-stale"
+out=$(set -o pipefail; export GIT_BRANCH_plow0=feat/x; _tcp plow plow wakeup)
+assert_eq "plow2-wakeup $SBX/Hacking/plow2" "$out" "a failing last server does not hide a busy pane"
+rm -rf "$SOCKS"/*
 
 # tag arg drives the session name independent of the repo dir
 out=$(_tcp plow xyz wakeup)

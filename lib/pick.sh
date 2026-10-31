@@ -10,10 +10,12 @@
 # POSIX-shell safe (no `local`, no bashisms) since the remote login shell is
 # unknown.
 
-# 0 if a tmux pane whose cwd is <dir> runs a non-shell foreground command.
+# 0 if a tmux pane whose cwd is <dir> runs a non-shell foreground command, on any
+# of this user's tmux servers — kitchen runs its cooks on `-L ck-*` servers.
 _tcp_busy() { # _tcp_busy <dir>
-  tmux list-panes -a -F '#{pane_current_path}|#{pane_current_command}' 2>/dev/null \
-    | awk -F'|' -v d="$1" '$1==d && $2 !~ /^-?(bash|zsh|sh|fish)$/ {f=1} END{exit !f}'
+  for _tcp_s in "${TMUX_TMPDIR:-/tmp}/tmux-$(id -u)"/*; do
+    tmux -S "$_tcp_s" list-panes -a -F '#{pane_current_path}|#{pane_current_command}' 2>/dev/null || :
+  done | awk -F'|' -v d="$1" '$1==d && $2 !~ /^-?(bash|zsh|sh|fish)$/ {f=1} END{exit !f}'
 }
 
 # 0 if <dir> is on main/master + clean working tree + not busy — the git/tmux half
