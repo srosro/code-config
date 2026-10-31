@@ -55,7 +55,11 @@ assert_eq "plow1-wakeup $SBX/Hacking/plow1" "$out" "idle shell pane is not busy"
 panes ck-boss "$SBX/Hacking/plow1|claude\n"
 out=$(export GIT_BRANCH_plow0=feat/x; _tcp plow plow wakeup)
 assert_eq "plow2-wakeup $SBX/Hacking/plow2" "$out" "a pane on another tmux server is busy"
-rm -f "$SOCKS"/*
+# ...even when a later server's query fails under tc's pipefail (a dir makes the fake's cat fail)
+mkdir "$SOCKS/zz-stale"
+out=$(set -o pipefail; export GIT_BRANCH_plow0=feat/x; _tcp plow plow wakeup)
+assert_eq "plow2-wakeup $SBX/Hacking/plow2" "$out" "a failing last server does not hide a busy pane"
+rm -rf "$SOCKS"/*
 
 # tag arg drives the session name independent of the repo dir
 out=$(_tcp plow xyz wakeup)
