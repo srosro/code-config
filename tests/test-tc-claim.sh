@@ -3,6 +3,8 @@ set -u
 HERE=$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 . "$HERE/assert.sh"
 TC="$HERE/../tc"
+# No real tmux servers: the busy check scans every socket in this dir.
+export TMUX_TMPDIR=/nonexistent-tc-claim-test
 
 # Build a sandbox HOME with real git repos on main (tag `cc` → repo `code-config`).
 mk_sbx() { # mk_sbx <slot> <slot> ... ; echoes the sandbox dir
@@ -162,7 +164,7 @@ esac
 FAKE
 cat >"$SBX/bin/tmux" <<'FAKE'
 #!/usr/bin/env bash
-[ "$1 $2" = "list-panes -a" ] || exit 0
+[ "$1 $3 $4" = "-S list-panes -a" ] || exit 0
 c="$HOME/.tmux-n"; n=$(cat "$c" 2>/dev/null || echo 0); echo $((n+1)) >"$c"
 # code-config0's pane runs `claude` (busy) on every call after the 1st (_tcp's check)
 [ "$n" != 0 ] && printf '%s/Hacking/code-config0|claude\n' "$HOME"

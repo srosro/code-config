@@ -14,3 +14,8 @@ alias goclaude='git checkout main && git pull --ff-only origin main && claude --
 # gocodex — update the checkout and launch Codex with its normal sandbox and
 # approval boundary.
 alias gocodex='git checkout main && git pull --ff-only origin main && codex'
+
+# gokitchen — goclaude's update, then open a kitchen whose sous runs in this
+# checkout (unnamed: a named `kitchen open` creates a worktree). Run it inside a
+# `tc` slot; each slot gets its own kitchen, tmux server and channel socket.
+alias gokitchen='git checkout main && git pull --ff-only origin main && kitchen open'

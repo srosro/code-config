@@ -194,6 +194,7 @@ fi
 grep -q "alias goclaude=" "$PWD/aliases.sh" || fail "aliases.sh does not define the goclaude alias"
 grep -q "alias gocodex=.*codex'" "$PWD/aliases.sh" || fail "aliases.sh does not define the gocodex alias"
 ! grep -q "alias gocodex=.*--yolo" "$PWD/aliases.sh" || fail "gocodex must retain Codex sandbox and approvals"
+grep -q "alias gokitchen=.*kitchen open'" "$PWD/aliases.sh" || fail "aliases.sh does not define the gokitchen alias"
 # Unlike the two loops in tests/, this body runs `just install`, and the child
 # inherits fd 3 open — so a child that reads it still truncates this matrix, and
 # the `pass` below prints green with nothing behind it. That asymmetry is why
