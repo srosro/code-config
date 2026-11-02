@@ -168,7 +168,7 @@ install-claude:
 
     # Source the fleet shell aliases (currently just `goclaude`) so it reaches the host's
     # interactive shell. Always seed the rc the active shell ($SHELL) reads — ~/.zshrc
-    # on macOS (mbp/wmp), ~/.bashrc on Linux — creating it if absent; also cover the
+    # on macOS, ~/.bashrc on Linux — creating it if absent; also cover the
     # other rc when it already exists (a user who switches shells). The repo file
     # stays canonical (shell analog of the symlink model); the rc only holds a guarded
     # source line, so edits to aliases.sh propagate on the next shell. `goclaude` is an
