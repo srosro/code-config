@@ -24,7 +24,6 @@ EOF
 # must not equal any column-1 hostname or any other row's column-3 alias — either
 # silently reroutes that host (or leaves the alias dead on arrival). Two or more
 # aliases warrant a table-wide test; one doesn't.
-# `wmps-macbook-pro` runs PROD Plow — mutations there are user-visible immediately.
 _fleet_hosts() {
   local f=${CODE_CONFIG_FLEET_HOSTS:-$HOME/.config/code-config/fleet-hosts}
   [[ -r "$f" ]] || { echo "fleet: host table not found at $f — install code-config-private" >&2; return 1; }
