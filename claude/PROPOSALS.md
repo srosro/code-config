@@ -6871,6 +6871,11 @@ its test, not the full rationale, on the first pass.
 
 **Next instance:** a deploy watcher plus a CI monitor running in parallel on a different repo, where each monitor's timeout fires a notification that tempts a status reply.
 
+### +1 — 2026-11-04 · str-hermes-agent2 cook · a hold the operator acknowledged
+**Change:** same; after "Sam has the ask", 30-min monitor ticks and spent-monitor notices produce no user-facing message.
+**Why (autonomy):** Stop — re-posted "nothing changed, can I merge?" every tick while the ask sat with Sam. Prior authority — § Answer Shape's once-per-state-change rule. Unblock — the sous told me to stop pinging.
+**Next instance:** a converged PR in a different repo awaiting a human approval click, with the babysit Monitor re-arming.
+
 ## [removes-handback] Read a live agent pane with `capture-pane -e` — dim text after the prompt is a suggestion, not a draft
 
 **Change:** before typing into or restarting a live Claude Code (or similar TUI) session in tmux, capture with `tmux capture-pane -p -e` and treat dim (`ESC[2m`) text on the composer line as empty. Only non-dim text is an operator draft worth protecting; never ask the operator to clear one before checking.
@@ -6878,3 +6883,24 @@ its test, not the full rationale, on the first pass.
 **Why (autonomy):** Stop — I told the operator a sous restart would wipe their "unsent draft" and asked them to clear it; they came back with "what do i need to do?". Prior authority — they had already approved the restart, and the pane's escape codes showed the text was Claude Code's grey prompt suggestion. Unblock — the operator's question; `capture-pane -e` resolved it in one call (kitchen-agents boss migration, 2026-11-04).
 
 **Next instance:** restarting a Codex or Claude cook in a different kitchen to pick up a new credential or CLAUDE.md, or a babysit loop that types `/exit` into a reviewer's pane.
+
+## [removes-handback] Converged + within its declared LOC target + no scope creep → merge without a per-PR ask
+**Change:** in `PR_LIFECYCLE.md` § Open / babysit-pr Step 7, a PR that met the convergence gate on its current head, sits within the PR body's declared size gate, and whose diff traces only to its intent is merge-authorized: `gh pr merge --match-head-commit <converged sha>`, then the sequel (deploy, smoke, `/cleanup`). Any miss → the existing exact-PR consent. Never `--admin`; a running-job veto still gates the deploy.
+**Why (autonomy):** Stop — plow-pbc/str-hermes-agent#136 (2026-11-04) converged with "Probes: None" at +43/−26 and I handed off for the merge click. Prior authority — none written yet; per-PR consent was the rule. Unblock — the operator made it a standing rule and had me merge, redeploy and smoke.
+**Next instance:** a small knightwatch-clean fix PR in latch-cli or hermes-plugin-plow that lands converged inside its target.
+
+## [removes-handback] A knightwatch review with skipped or timed-out specialists is not convergence
+**Change:** babysit-pr Step 6.7: before labeling `converged`, read the review header; "Partial review — specialist(s) did not complete/skipped" with "Probes: None" holds the label and gets one `/srosro-review` trigger on the same head; converge on the complete review (a decline as already-reviewed is reported, not counted).
+**Why (autonomy):** Stop — a str PR was labeled and bannered converged on a first review whose shape and tests specialists had timed out; the operator had me re-run it (Nov 2026). Prior authority — the gate already requires a review that covered the head. Unblock — the operator's re-run instruction.
+**Next instance:** a plow PR whose review lands during a codex quota squeeze with two specialists skipped.
+
+## [removes-handback] A downstream agent blocked by a tool gap → fetch the artifact over operator access, deliver it through the agent's intake, file the gap
+**Change:** before writing "owner action: please send/forward X", check whether the operator already reaches X (SSH to the owner's Mac, the container, a CLI login) without new authority; if so fetch it (nothing printed), hand it to the agent the way its intake works, and file the tool gap as an issue/PR. Hand back only when no operator path exists.
+**Why (autonomy):** Stop — reported "Sam must forward Gianna's invoice" when Aspen couldn't read an iMessage attachment (2026-11-04). Prior authority — SSH to mba with Full Disk Access, and Aspen had paid such invoices before. Unblock — "why do I have to send the invoice? Aspen paid before."
+**Next instance:** a life-assistant agent that can't open an emailed PDF that sits in the owner's Gmail, which `latch google` reaches.
+
+## [removes-handback] An emailed or texted verification code → fetch it through latch, never hand the browser over for it
+**Change:** at "enter the code we sent", follow the latch guide's order (vault TOTP → `latch google … gmail search` / `latch messages search --since 10m` → type it, never print it); hand off only for passkey, captcha or bank 3-D Secure.
+**Why (autonomy):** Stop — a Vinted email-verification step was handed to the operator (2026-11-02). Prior authority — latch reads the owner's mail and messages. Unblock — "use latch to find the code", made a standing rule.
+**Next instance:** a cloud-console sign-in in a different repo that emails a six-digit code mid-deploy.
+
