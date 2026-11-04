@@ -81,7 +81,7 @@ Issue reconciliation is tracker maintenance, not permission to fix every issue. 
 
 Use a feature branch and the repository's canonical gate. Keep the semantic diff smaller than the behavior captured. Commit explicit paths, push, and open a pull request, then route it by change type:
 
-- **Ranking-only:** immediately invoke `$babysit-pr` and carry the exact head to convergence. Invoking cleanup is not merge consent; stop there unless the human explicitly consents to merging that exact pull request.
+- **Ranking-only:** immediately invoke `$babysit-pr` and carry the exact head to convergence. Cleanup PRs sit outside the standing merge authority; stop there unless the human explicitly consents to merging that exact pull request.
 - **Semantic guidance:** open the pull request only for a learning that clears the operator-handback bar above. Do not invoke `$babysit-pr`, merge, deploy, or wait for review; leave the pull request open for the operator. This is the cleanup-specific exception to the general PR-convergence workflow.
 
 If there is no semantic learning and no evidenced ranking move, make no configuration edit. Continue through reconciliation and reporting.
