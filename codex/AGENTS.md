@@ -102,8 +102,9 @@
 - Every PR body declares its expected net LOC (adds minus deletes) at open.
   Merge authority is standing on an operator-owned repo (incl. `plow-pbc/*`)
   when the converged head has green required checks, no `REVIEW_REQUIRED`,
-  actual net LOC at or under the declared size, and no scope growth past the
-  PR's stated intent. Any miss means explicit consent for that exact PR.
+  actual net LOC ≤ declared + 50 + 50% of |declared| (`~100` → ≤ +200), and
+  no scope growth past the PR's stated intent. Any miss means explicit consent
+  for that exact PR.
   Approval, green CI, continuation requests and autonomy or deploy mandates add
   no authority. Pins (below) and cleanup PRs keep their own rules.
 - Never merge before the current head is converged. A push invalidates prior
