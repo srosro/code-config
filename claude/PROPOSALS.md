@@ -6870,3 +6870,11 @@ its test, not the full rationale, on the first pass.
 **Why (autonomy):** Stop — the operator had to tell me to stop sending "nothing changed" notices from spent monitors. Prior authority — § Answer Shape already says to emit a signal once per state change. Unblock — the operator restated it as "report only on the result, the download, or a finding".
 
 **Next instance:** a deploy watcher plus a CI monitor running in parallel on a different repo, where each monitor's timeout fires a notification that tempts a status reply.
+
+## [removes-handback] Read a live agent pane with `capture-pane -e` — dim text after the prompt is a suggestion, not a draft
+
+**Change:** before typing into or restarting a live Claude Code (or similar TUI) session in tmux, capture with `tmux capture-pane -p -e` and treat dim (`ESC[2m`) text on the composer line as empty. Only non-dim text is an operator draft worth protecting; never ask the operator to clear one before checking.
+
+**Why (autonomy):** Stop — I told the operator a sous restart would wipe their "unsent draft" and asked them to clear it; they came back with "what do i need to do?". Prior authority — they had already approved the restart, and the pane's escape codes showed the text was Claude Code's grey prompt suggestion. Unblock — the operator's question; `capture-pane -e` resolved it in one call (kitchen-agents boss migration, 2026-11-04).
+
+**Next instance:** restarting a Codex or Claude cook in a different kitchen to pick up a new credential or CLAUDE.md, or a babysit loop that types `/exit` into a reviewer's pane.
