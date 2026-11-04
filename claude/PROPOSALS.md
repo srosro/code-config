@@ -6836,3 +6836,19 @@ its test, not the full rationale, on the first pass.
 **Why (autonomy):** Stop — a hosting design arrived with backups, a retention timer and monitoring bundled in, and the operator had to strip it back to the ask ("ship exactly what I asked"). Prior authority — the simplify-by-default and anti-bloat rules already prefer the smaller shape; the gap was treating ops extras as free. Unblock — the operator's correction; this session shipped a DDNS timer, a Caddy route and a 1-minute pull timer with no extras and got "great" on each.
 
 **Next instance:** standing up a small service on a Pi or a VPS for a family member or a customer demo — a static site, a webhook receiver, a dashboard — where "while I'm here" backups and uptime checks tempt.
+
+## [removes-handback] A deliverable printed mid-turn is not delivered — repeat it in the turn's closing report
+
+**Change:** when a brief says "report X first, then continue", put X (compact) in the final message of the turn too; never point at "posted above". Text emitted between tool calls is not reliably what the operator reads.
+
+**Why (autonomy):** Stop — the operator had to come back with "I didn't get your Phase 1 ledger" and re-ask for it. Prior authority — the brief already named the ledger as the first deliverable. Unblock — the operator repeated the ask and dictated its shape (one line per gap).
+
+**Next instance:** a security audit or a fleet sweep whose table is printed early in a long run, followed by implementation work — the closing report must carry the table, not reference it.
+
+## [removes-handback] A watch that wakes with no change says nothing to the operator
+
+**Change:** during long watches (review loops, download/CI watchers), a wake whose state didn't change — a spent monitor closing, a still-pending check — gets no user-facing message; report only when a watched outcome lands or a finding appears. Extends the once-per-state-change banner rule in `CLAUDE.md` § Answer Shape to every reply, not just banners.
+
+**Why (autonomy):** Stop — the operator had to tell me to stop sending "nothing changed" notices from spent monitors. Prior authority — § Answer Shape already says to emit a signal once per state change. Unblock — the operator restated it as "report only on the result, the download, or a finding".
+
+**Next instance:** a deploy watcher plus a CI monitor running in parallel on a different repo, where each monitor's timeout fires a notification that tempts a status reply.
