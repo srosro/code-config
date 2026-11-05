@@ -99,10 +99,14 @@
   equality, or, when a cross-fork stack forces a rebase onto upstream's `main`,
   `git range-diff <old-base>..<converged-head> <new-base>..<upstream-head>`
   showing every commit unchanged. Matching additions/deletions is not that test.
-- Never merge a pull request without explicit human consent for that exact PR.
-  Convergence, approval, green CI, a request to continue or take next steps,
-  and standing autonomy or deployment instructions are not merge consent.
-  Pointer-only pin PRs are the single exception — see the pin bullet below.
+- Every PR body declares its expected net LOC (adds minus deletes) at open.
+  Merge authority is standing on an operator-owned repo (incl. `plow-pbc/*`)
+  when the converged head has green required checks, no `REVIEW_REQUIRED`,
+  actual net LOC ≤ declared + 50 + 50% of |declared| (`~100` → ≤ +200), and
+  no scope growth past the PR's stated intent. Any miss means explicit consent
+  for that exact PR.
+  Approval, green CI, continuation requests and autonomy or deploy mandates add
+  no authority. Pins (below) and cleanup PRs keep their own rules.
 - Never merge before the current head is converged. A push invalidates prior
   convergence; mergeability, green checks, or a review of an older SHA cannot
   substitute for a clean convergence gate on the exact commit being merged.
@@ -125,11 +129,11 @@
   green CI alone misses a bad pointer, but a pointer bump does not earn a full
   convergence loop, so do not wait for a clean second round. A pin PR never
   enters `$babysit-pr`: this bullet is its whole lifecycle, so the loop's
-  re-review-per-head, convergence, and per-PR consent rules do not apply, and
+  re-review-per-head, convergence, and merge-authority rules do not apply, and
   the babysit skill carries no pin branch. Addressing the one review is
   expected to move the head and owes no re-review. No per-PR consent and no
   repin request — pin authority is standing, for every hop a merge unblocks. Anything beyond the
-  pointer makes it an ordinary PR again, consent rule included — code riding
+  pointer makes it an ordinary PR again, merge rule included — code riding
   along, a backwards pin, a red required check, a review that left outstanding
   items or an unresolved debate, or a repo whose ruleset holds it at
   `reviewDecision=REVIEW_REQUIRED` (an approval no bot can supply and
