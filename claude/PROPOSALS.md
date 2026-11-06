@@ -6952,3 +6952,15 @@ its test, not the full rationale, on the first pass.
 **Change:** Add to `CLAUDE.md § Take the Steps`: when an investigation turns up a second, real defect beside the one reported, open its fix as an ordinary PR and run it through `/babysit-pr` to merge under standing authority. That holds even when the ask was only to "prepare" it in case pending evidence points there. Whether it fixes the reporter's symptom decides only which release note it lands under, not whether it ships. A draft is for work you're unsure should exist, not for a confirmed bug waiting on a third party's reply.
 **Why (autonomy):** Stop — an upload path that held a whole file in memory was a confirmed bug. I briefed its fix as a draft PR "ready if Aspen's details point there", and the operator had to say "it's a real bug too, make it a normal PR, converge and merge it". Prior authority — the standing merge rule for a PR that converges within its declared size, and the bug's own reproduction. Unblock — the operator re-classified it from contingent to real (plow-pbc/latch-cli#434).
 **Next instance:** while tracing a plow webhook timeout, finding an unrelated N+1 query in the same handler, or a knightwatch-reviewer bug found while debugging a stalled review.
+
+## An announced extra review (adversarial, security, a named human) gates the merge — ordinary convergence doesn't satisfy it
+
+**Change:** When the operator says a PR gets a special review, treat that PR as unmergeable until the review's result is in the thread or relayed. Converged + green CI is reported as "converged, waiting on <named review>", and the standing merge authority does not fire.
+**Why (autonomy):** Stop — a small security PR was merged on the first clean knightwatch round, and the operator then asked to hold it for the adversarial pass he had announced; only a revert could undo it (plow-pbc/swarm D6 PR, 2026-11-05). Prior authority — the announcement itself was in the session. Unblock — the operator relaying "don't merge until I relay its results" (repeated on plow-pbc/swarm#43, where it was honoured).
+**Next instance:** a different repo where the operator says "have security look at this one" or "I want Copilot's pass too" on a PR the loop would otherwise merge under standing authority.
+
+## PR evidence screenshots never land in the PR's tree — host them off-branch and say so
+
+**Change:** Screenshot/evidence images for a PR live on an orphan ref (e.g. `agent-screenshots/<name>`) or as a comment attachment, never in the PR head; the comment states that they are not in the diff, and the PR's file list is checked for image files before merge.
+**Why (autonomy):** Stop — a reviewer read a raw-image URL on the repo as a screenshot committed into the branch and blocked the merge until it was settled (plow-pbc/swarm, captured 2026-11-05). Prior authority — none needed; the image was never in the diff, only ambiguously linked. Unblock — the author explaining where the image lived.
+**Next instance:** a UI PR in another repo whose reviewer asks for before/after screenshots.
