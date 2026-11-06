@@ -11,8 +11,11 @@
 # unknown.
 
 # 0 if a tmux pane whose cwd is <dir> runs a non-shell foreground command, on any
-# of this user's tmux servers — kitchen runs its cooks on `-L ck-*` servers.
+# of this user's tmux servers — kitchen runs its cooks on `-L ck-*` servers — or
+# if a kitchen cook's record names <dir> as its cwd: the record lives until
+# clock-out, so it holds the slot while the cook's window is down (a suspended kitchen).
 _tcp_busy() { # _tcp_busy <dir>
+  grep -qsF "\"cwd\": \"$1\"" "$HOME"/.claude-kitchen/*/cooks/*.json && return 0
   for _tcp_s in "${TMUX_TMPDIR:-/tmp}/tmux-$(id -u)"/*; do
     tmux -S "$_tcp_s" list-panes -a -F '#{pane_current_path}|#{pane_current_command}' 2>/dev/null || :
   done | awk -F'|' -v d="$1" '$1==d && $2 !~ /^-?(bash|zsh|sh|fish)$/ {f=1} END{exit !f}'

@@ -61,6 +61,18 @@ out=$(set -o pipefail; export GIT_BRANCH_plow0=feat/x; _tcp plow plow wakeup)
 assert_eq "plow2-wakeup $SBX/Hacking/plow2" "$out" "a failing last server does not hide a busy pane"
 rm -rf "$SOCKS"/*
 
+# a kitchen cook's record holds its slot with no pane up (a suspended kitchen), until
+# clock-out deletes the record; a cwd that only shares a prefix (plow1 vs plow10) doesn't
+mkdir -p "$SBX/.claude-kitchen/boss/cooks"
+printf '{\n  "agent": "eng",\n  "cwd": "%s"\n}\n' "$SBX/Hacking/plow0" >"$SBX/.claude-kitchen/boss/cooks/eng.json"
+printf '{\n  "cwd": "%s"\n}\n' "$SBX/Hacking/plow10" >"$SBX/.claude-kitchen/boss/cooks/ios.json"
+out=$(_tcp plow plow wakeup)
+assert_eq "plow1-wakeup $SBX/Hacking/plow1" "$out" "a kitchen cook's recorded cwd holds the slot"
+rm "$SBX/.claude-kitchen/boss/cooks/eng.json"
+out=$(_tcp plow plow wakeup)
+assert_eq "plow0-wakeup $SBX/Hacking/plow0" "$out" "clock-out (record gone) frees the slot"
+rm -rf "$SBX/.claude-kitchen"
+
 # tag arg drives the session name independent of the repo dir
 out=$(_tcp plow xyz wakeup)
 assert_eq "xyz0-wakeup $SBX/Hacking/plow0" "$out" "tag arg drives session name"
