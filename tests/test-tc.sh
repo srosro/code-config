@@ -81,6 +81,7 @@ case $1 in
   remote) case $dir in
             *2) echo "git@example.com:fake/plow.git" ;;   # cosmetic .git suffix
             *3) echo "git@example.com:fake/plow/" ;;       # cosmetic trailing slash
+            *4) echo "https://example.com/fake/plow.git" ;; # same remote over HTTPS
             *)  echo "git@example.com:fake/plow" ;;
           esac ;;
   clone)  echo "$2 $3" >>"$GITLOG"; mkdir -p "$3/.git" ;;
@@ -97,6 +98,7 @@ assert_rc 0 "$rc"                                "setup re-run: cosmetic origin 
 assert_eq 10 "$(wc -l <"$SBX/clones" | tr -d ' ')" "setup re-run: idempotent, no new clones"
 assert_contains "$out" "skip:  plow2"            "setup re-run: normalized origin skips .git-suffixed slot"
 assert_contains "$out" "skip:  plow3"            "setup re-run: normalized origin skips trailing-slash slot"
+assert_contains "$out" "skip:  plow4"            "setup re-run: normalized origin skips HTTPS-cloned slot"
 assert_not_contains "$out" "different origin"    "setup re-run: no false origin-mismatch on cosmetic drift"
 rm -rf "$SBX"
 

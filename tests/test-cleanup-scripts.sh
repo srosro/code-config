@@ -106,6 +106,11 @@ git -C "$SBX/Hacking/code-config0" remote set-url origin "$SBX/origin.git/"  # c
 out=$(HOME="$SBX" TC_LOCK_DIR="$SBX/locks" bash "$SCRIPTS/claim-checkout.sh" 2>/dev/null | tail -2)
 assert_contains "$out" "CONFIG_DIR=$SBX/Hacking/code-config0" "claim: cosmetic origin drift (.git/slash) still claimed"
 rm -rf "$SBX"
+SBX=$(mk_sbx code-config0)
+git -C "$SBX/Hacking/code-config0" remote set-url origin "file://$SBX/origin.git"  # same remote, other transport
+out=$(HOME="$SBX" TC_LOCK_DIR="$SBX/locks" bash "$SCRIPTS/claim-checkout.sh" 2>/dev/null | tail -2)
+assert_contains "$out" "CONFIG_DIR=$SBX/Hacking/code-config0" "claim: same remote over another transport still claimed"
+rm -rf "$SBX"
 
 # 3. exhaustion → auto-clones the lowest unused slot
 SBX=$(mk_sbx code-config0)

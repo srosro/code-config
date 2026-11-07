@@ -153,9 +153,9 @@ fi
 case $url in
   http://*@*|https://*@*) echo "tc setup: refusing a credential-bearing origin URL — use an SSH remote" >&2; exit 1 ;;
 esac
-# A trailing .git or / is cosmetic — same remote. Normalize before comparing so a
-# slot cloned with the .git suffix (or by hand) is not misread as a different origin.
-_norm() { u=${1%/}; printf "%s\n" "${u%.git}"; }
+# A trailing .git or /, and SSH vs HTTPS, are cosmetic — same remote. Normalize to
+# host/path before comparing so a slot cloned either way is not misread as a different origin.
+_norm() { u=${1%/}; u=${u%.git}; u=${u#*://}; u=${u#*@}; printf "%s\n" "${u/://}"; }
 nurl=$(_norm "$url")
 for n in 0 1 2 3 4 5 6 7 8 9; do
   d=$repo$n
