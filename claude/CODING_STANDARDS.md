@@ -280,7 +280,6 @@ For the canonical testing bullets (test behavior not implementation, never skip,
 
 - **`just test` must pass before merging.** The pre-merge gate is non-negotiable: no merge on a red bar, even if the change is "obviously" safe. If a repo doesn't have a `just test`, add one before landing the first PR that needs gating.
 - A change crossing multiple layers (e.g. Swift → plowd → API) needs 1–2 focused behavior tests, not exhaustive layer-by-layer coverage
-- **New tests in the plow repo should align with `docs/TEST_PATTERNS.md` and `./tests/README.md`** — the repo's own test-writing conventions. Tests that diverge from those patterns without a good reason are a *low: tests* finding.
 
 **Review question:** *Are the tests loud-on-failure, aligned with the repo's test patterns, and focused on behavior rather than implementation details?*
 
