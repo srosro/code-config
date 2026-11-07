@@ -102,8 +102,8 @@
 - Every PR body fills the PR template's fields at open, including expected net
   LOC (adds minus deletes) and new moving parts. Merge authority is standing on
   an operator-owned repo (incl. `plow-pbc/*`) when the converged head has green
-  required checks, no `REVIEW_REQUIRED`, no `needs-sam` label, and no scope
-  growth past the PR's stated intent. Blocked when actual > expected +
+  required checks, no `REVIEW_REQUIRED`, actual within budget with no
+  `needs-sam` label, and no scope growth past the PR's stated intent. Blocked when actual > expected +
   0.4×|expected| + 50 (`~100` → over +190): label it `needs-sam`. Any miss
   means explicit consent for that exact PR.
   Approval, green CI, continuation requests and autonomy or deploy mandates add
