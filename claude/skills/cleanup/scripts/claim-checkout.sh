@@ -45,11 +45,12 @@ SVC=~/services/code-config
 # A SIBLING, not a $SVC lookup — the two ship in one commit, so this binds the
 # version that shipped with this file and leaves no skew for the checks above.
 . "${BASH_SOURCE[0]%/*}/reseat.sh"   # reseat_if_ready: merged-head-gated switch to main
-# A trailing .git or / is cosmetic — same remote. Normalize both sides before
-# comparing so a slot cloned with a .git suffix is still claimable, not skipped
+# A trailing .git or /, and SSH vs HTTPS, are cosmetic — same remote. Normalize both
+# sides to host/path before comparing so such a slot is still claimable, not skipped
 # as wrong-origin (mirrors the _norm in tc's setup provision snippet).
-_ccnorm() { local u=${1%/}; printf '%s\n' "${u%.git}"; }
-ORIGIN=$(_ccnorm "$(git -C "$SVC" remote get-url origin)")
+_ccnorm() { local u=${1%/}; u=${u%.git}; u=${u#*://}; u=${u#*@}; printf '%s\n' "${u/://}"; }
+ORIGIN_URL=$(git -C "$SVC" remote get-url origin)
+ORIGIN=$(_ccnorm "$ORIGIN_URL")
 _cc_free() { [ "$(git -C "$1" symbolic-ref --short HEAD 2>/dev/null)" = main ] && _tcp_eligible "$1"; }
 # What §1a2 may hand to reseat_if_ready: a genuine feature branch, nobody in it.
 # `master` is excluded because reseat treats it as a default branch and pulls it —
@@ -140,7 +141,7 @@ if [ -z "$CONFIG_DIR" ]; then
     # both clone into the same slot. claim_slot handles stale reclaim too.
     if claim_slot "$lock"; then
       # Release if clone fails (network, auth, disk) so a later run can retry.
-      if ! git clone "$ORIGIN" "$candidate"; then
+      if ! git clone "$ORIGIN_URL" "$candidate"; then
         release_slot "$lock"
         continue
       fi
