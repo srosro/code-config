@@ -90,16 +90,7 @@ install-claude:
     # user's other PostToolUse/UserPromptSubmit hooks — so we concat the owned
     # event arrays and `unique` them. `unique` makes it idempotent: re-running
     # install dedupes our identical entry instead of stacking copies.
-    #
-    # Migration prune: roborev's Claude hooks now live here, while the frozen
-    # legacy installer still writes its former `*/roborev/claude-hooks/` entries.
-    # Those duplicate entries are stale after this install — matched on
-    # that tail rather than `/.config/…` because XDG_CONFIG_HOME can relocate them;
-    # repo-owned copies live under `/.claude/hooks/`, so this cannot over-prune —
-    # left in place they would double every gate. Strip them from each matcher's
-    # nested `hooks` array (NOT the whole matcher object — a hand-merged matcher
-    # could co-locate one with a hook we must keep), then drop only matcher
-    # objects left empty. Every other PreToolUse hook survives untouched.
+
     # One atomic writer for both fragments: hooks ($frag) and permission denies
     # ($deny). Nothing reads settings.json between them, so a single jq -s over the
     # original file plus both fragments — then one rename — avoids a second merge
@@ -111,10 +102,6 @@ install-claude:
       def dedupe_keep_order: reduce .[] as $x ([]; if any(.[]; . == $x) then . else . + [$x] end);
       .[0] as $cur | .[1] as $frag | .[2] as $deny
       | $cur | .hooks = ($cur.hooks // {})
-      | .hooks.PreToolUse = ((.hooks.PreToolUse // [])
-          | map(.hooks = [(.hooks[]? | select((.command // "") | contains("/roborev/claude-hooks/") | not))])
-          | map(select((.hooks | length) > 0)))
-      | (if (.hooks.PreToolUse // [] | length) == 0 then del(.hooks.PreToolUse) else . end)
       | reduce ($frag.hooks // {} | to_entries[]) as $e (
           .;
           .hooks[$e.key] = (((.hooks[$e.key] // []) + $e.value) | dedupe_keep_order)
@@ -338,11 +325,15 @@ install-roborev:
         rc=$?
         trap - EXIT
         if ! CONFIG_SKIP_PLUGINS=1 just --justfile "$JUSTFILE" install-claude; then
-            echo "FATAL: could not restore code-config's Claude hooks after the legacy roborev install" >&2
+            echo "FATAL: could not restore code-config's Claude settings after the legacy roborev install" >&2
             exit 1
         fi
+        # kitchen owns the roborev Claude hooks: its setup drops the legacy installer's
+        # copies and re-adds its own. Its exit code also covers unrelated readiness
+        # checks, so it is not treated as this recipe's failure.
+        kitchen setup >/dev/null || echo "note: kitchen setup reported unready checks; run it to see them" >&2
         if [[ "$rc" -eq 0 ]]; then
-            echo "✓ roborev binary, daemon, git hooks, and code-config Claude hooks installed + verified"
+            echo "✓ roborev binary, daemon and git hooks installed + verified; kitchen setup re-applied its Claude hooks"
         fi
         exit "$rc"
     }

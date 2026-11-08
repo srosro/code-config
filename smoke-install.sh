@@ -260,13 +260,9 @@ pass "migrate-paths is collision-safe, complete, remote+rc-scoped, and idempoten
 hooks_target=$(readlink "$tmp/.claude/hooks")
 [[ "$hooks_target" == "$PWD/claude/hooks" ]] || fail "$tmp/.claude/hooks points at '$hooks_target', expected '$PWD/claude/hooks'"
 [[ -f "$tmp/.claude/settings.json" ]] || fail "settings.json not created under $tmp/.claude/"
-jq -e '.hooks.PostToolUse[0].matcher=="AskUserQuestion"' "$tmp/.claude/settings.json" >/dev/null \
-  || fail "settings.json missing PostToolUse[AskUserQuestion] hook after install"
-jq -e '.hooks.UserPromptSubmit[0].hooks[0].command' "$tmp/.claude/settings.json" >/dev/null \
-  || fail "settings.json missing UserPromptSubmit hook after install"
-n_post=$(jq '.hooks.PostToolUse | length' "$tmp/.claude/settings.json")
-[[ "$n_post" == "1" ]] || fail "PostToolUse has $n_post entries after double-install (jq merge not idempotent — should be 1)"
-pass "just install links hooks dir + idempotently merges PostToolUse/UserPromptSubmit hooks into settings.json"
+n_kw=$(jq '[.hooks.PreToolUse[]?.hooks[]? | select(.command | endswith("/.claude/hooks/knightwatch-inflight-push-gate.py"))] | length' "$tmp/.claude/settings.json")
+[[ "$n_kw" == "1" ]] || fail "the knightwatch gate appears $n_kw times after double-install (jq merge not idempotent — should be 1)"
+pass "just install links hooks dir + idempotently merges its hooks (the knightwatch gate) into settings.json"
 
 # 3d. The settings merge is non-destructive: a user's pre-existing unrelated
 #     hooks + top-level keys survive, and re-running install doesn't stack
@@ -275,60 +271,27 @@ pass "just install links hooks dir + idempotently merges PostToolUse/UserPromptS
 tmp_pre="$(mktemp -d)"
 mkdir -p "$tmp_pre/.claude"
 cat > "$tmp_pre/.claude/settings.json" <<'JSON'
-{"theme":"dark","hooks":{"PostToolUse":[{"matcher":"Edit","hooks":[{"type":"command","command":"echo pre-existing"}]}]}}
+{"theme":"dark","hooks":{"PreToolUse":[{"matcher":"Edit","hooks":[{"type":"command","command":"echo pre-existing"}]}]}}
 JSON
 HOME="$tmp_pre" just install >/dev/null
 HOME="$tmp_pre" just install >/dev/null   # rerun → idempotency
 jq -e '.theme=="dark"' "$tmp_pre/.claude/settings.json" >/dev/null \
   || fail "settings merge dropped an unrelated top-level key (theme)"
-jq -e 'any(.hooks.PostToolUse[]; .matcher=="Edit")' "$tmp_pre/.claude/settings.json" >/dev/null \
-  || fail "settings merge dropped the user's pre-existing PostToolUse[Edit] hook"
-jq -e 'any(.hooks.PostToolUse[]; .matcher=="AskUserQuestion")' "$tmp_pre/.claude/settings.json" >/dev/null \
-  || fail "settings merge didn't add PostToolUse[AskUserQuestion]"
-n_aq=$(jq '[.hooks.PostToolUse[] | select(.matcher=="AskUserQuestion")] | length' "$tmp_pre/.claude/settings.json")
-[[ "$n_aq" == "1" ]] || fail "AskUserQuestion hook appears $n_aq times after double-install (merge not idempotent)"
-# Order preservation: the user's pre-existing Edit hook was registered FIRST,
-# the merge appended AskUserQuestion. A jq `unique` (which sorts) would
-# silently re-order them alphabetically (Ask… < Edit). The user-defined
-# execution order must survive intact.
-post0_matcher=$(jq -r '.hooks.PostToolUse[0].matcher' "$tmp_pre/.claude/settings.json")
-[[ "$post0_matcher" == "Edit" ]] || fail "settings merge re-ordered PostToolUse hooks: index 0 is '$post0_matcher', expected 'Edit' (the user's pre-existing entry)"
+jq -e 'any(.hooks.PreToolUse[]; .matcher=="Edit")' "$tmp_pre/.claude/settings.json" >/dev/null \
+  || fail "settings merge dropped the user's pre-existing PreToolUse[Edit] hook"
+n_kw=$(jq '[.hooks.PreToolUse[]?.hooks[]? | select(.command | endswith("knightwatch-inflight-push-gate.py"))] | length' "$tmp_pre/.claude/settings.json")
+[[ "$n_kw" == "1" ]] || fail "the knightwatch gate appears $n_kw times after double-install (merge not idempotent)"
+# Order preservation: the user's pre-existing Edit hook was registered FIRST and
+# the merge appended ours. A jq `unique` (which sorts) would silently re-order
+# them; the user-defined execution order must survive intact.
+pre0_matcher=$(jq -r '.hooks.PreToolUse[0].matcher' "$tmp_pre/.claude/settings.json")
+[[ "$pre0_matcher" == "Edit" ]] || fail "settings merge re-ordered PreToolUse hooks: index 0 is '$pre0_matcher', expected 'Edit' (the user's pre-existing entry)"
 rm -rf "$tmp_pre"
 pass "settings merge preserves unrelated hooks + top-level keys, stays idempotent, and preserves user-defined hook order"
 
-# 3e. Migration prune: the roborev PreToolUse[Bash] bridge moved to seed-auto-roborev,
-#     so the fragment carries it again. A machine seeded by seed-auto-roborev
-#     keeps stale `~/.config/roborev/claude-hooks/*` PreToolUse entries pointing
-#     into a retired seed — dead on every Bash command, and doubling every gate
-#     if left beside the repo-owned ones. Re-running install must prune exactly
-#     those while leaving the repo-owned hooks intact. Includes an XDG-relocated
-#     row, since XDG_CONFIG_HOME moves them off the `/.config/` path.
-#     Covers both prune branches: a matcher object where the stale command is
-#     CO-LOCATED with a hook we must keep (strip only the nested command, keep
-#     the matcher), and a matcher object where the stale command is ALONE (drop
-#     the now-empty matcher).
-tmp_mig="$(mktemp -d)"
-mkdir -p "$tmp_mig/.claude"
-cat > "$tmp_mig/.claude/settings.json" <<'JSON'
-{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"$HOME/.claude/hooks/roborev-pre-commit-context.py"},{"type":"command","command":"/home/u/.config/roborev/claude-hooks/roborev-pre-commit-context.py"}]},{"matcher":"Bash","hooks":[{"type":"command","command":"/home/u/.config/roborev/claude-hooks/roborev-pre-push-gate.py"}]},{"matcher":"Bash","hooks":[{"type":"command","command":"/home/u/xdg/roborev/claude-hooks/roborev-pre-checkout-gate.py"}]}]}}
-JSON
-HOME="$tmp_mig" just install >/dev/null
-jq -e 'all(.hooks.PreToolUse[]?.hooks[]?; (.command // "") | contains("/.config/roborev/claude-hooks/") | not)' "$tmp_mig/.claude/settings.json" >/dev/null \
-  || fail "install did not prune the stale seed-owned roborev PreToolUse[Bash] hooks (dangling-hook migration bug)"
-jq -e 'any(.hooks.PreToolUse[]?.hooks[]?; .command == "$HOME/.claude/hooks/roborev-pre-commit-context.py")' "$tmp_mig/.claude/settings.json" >/dev/null \
-  || fail "install dropped the repo-owned roborev bridge co-located in the same matcher as a stale one (prune too broad)"
-# The XDG-relocated row specifically: matching on /.config/ instead of the stable
-# tail would leave this one behind, which is the escape the fixture exists for.
-jq -e 'all(.hooks.PreToolUse[]?.hooks[]?; (.command // "") | contains("/xdg/roborev/claude-hooks/") | not)' "$tmp_mig/.claude/settings.json" >/dev/null \
-  || fail "install did not prune the XDG-relocated seed hook (prune matched /.config/ rather than the stable tail)"
-jq -e 'all(.hooks.PreToolUse[]?; (.hooks | length) > 0)' "$tmp_mig/.claude/settings.json" >/dev/null \
-  || fail "install left an empty PreToolUse matcher object after stripping its only (stale) hook"
-rm -rf "$tmp_mig"
-pass "just install strips only the stale seed-owned roborev commands, preserves the repo-owned bridge"
-
-# `install-roborev` must restore code-config's Claude-hook ownership even when
-# the frozen legacy install verifies unsuccessfully. Otherwise the failure path
-# leaves both copies registered and every commit/push/switch runs twice.
+# `install-roborev` must hand the roborev Claude hooks back to their owner (kitchen
+# setup, which drops the legacy installer's copies) even when the frozen legacy
+# install verifies unsuccessfully, and must still fail loudly.
 tmp_robo_fail="$(mktemp -d)"
 seed_dir="$tmp_robo_fail/.cache/seed-auto-roborev"
 mkdir -p "$seed_dir/.git" "$seed_dir/ref" "$tmp_robo_fail/bin"
@@ -338,6 +301,8 @@ printf '%s\n' "$*" >> "$HOME/git.log"
 exit 0
 SH
 chmod +x "$tmp_robo_fail/bin/git"
+printf '#!/bin/sh\nprintf "%%s\\n" "$*" >> "$HOME/kitchen.log"\n' > "$tmp_robo_fail/bin/kitchen"
+chmod +x "$tmp_robo_fail/bin/kitchen"
 cat > "$seed_dir/ref/install.sh" <<'SH'
 #!/bin/sh
 mkdir -p "$HOME/.claude"
@@ -352,12 +317,10 @@ if CONFIG_SKIP_PLUGINS=1 HOME="$tmp_robo_fail" PATH="$tmp_robo_fail/bin:$PATH" j
 fi
 grep -qF "checkout --detach --quiet 83db20dcc8cb60b1eff73e06892b3140ec33b3d8" "$tmp_robo_fail/git.log" \
   || fail "install-roborev did not check out the reviewed legacy seed commit"
-jq -e 'all(.hooks.PreToolUse[]?.hooks[]?; (.command // "") | contains("/roborev/claude-hooks/") | not)' "$tmp_robo_fail/.claude/settings.json" >/dev/null \
-  || fail "failed install-roborev left legacy Claude hooks registered"
-jq -e 'any(.hooks.PreToolUse[]?.hooks[]?; .command == "$HOME/.claude/hooks/roborev-pre-push-gate.py")' "$tmp_robo_fail/.claude/settings.json" >/dev/null \
-  || fail "failed install-roborev did not restore code-config's Claude hooks"
+grep -qx "setup" "$tmp_robo_fail/kitchen.log" \
+  || fail "failed install-roborev did not hand the roborev Claude hooks back to kitchen setup"
 rm -rf "$tmp_robo_fail"
-pass "install-roborev restores code-config Claude hooks even when legacy verification fails"
+pass "install-roborev runs kitchen setup (the roborev hooks' owner) even when legacy verification fails"
 
 # 3f. Delete-aware: `just install` prunes a repo-owned skill or doc symlink whose
 #     source was removed from code-config (the regression that left dangling
