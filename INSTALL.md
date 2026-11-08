@@ -33,14 +33,14 @@ For development — writing config changes and running the `cleanup` skill, whic
 
 ## 2. Run install
 
-Requires [`just`](https://github.com/casey/just) and [`jq`](https://jqlang.github.io/jq/) (`brew install just jq` on macOS). `jq` is used to merge the canonical hook block in `claude/hooks/hooks.settings.json` (the two capture hooks, the knightwatch in-flight push gate, and roborev's pre-commit context, pre-push, and pre-checkout hooks) into `~/.claude/settings.json`.
+Requires [`just`](https://github.com/casey/just) and [`jq`](https://jqlang.github.io/jq/) (`brew install just jq` on macOS). `jq` is used to merge the canonical hook block in `claude/hooks/hooks.settings.json` (the knightwatch in-flight push gate) into `~/.claude/settings.json`.
 
 ```sh
 cd ~/services/code-config
 just install
 ```
 
-Symlinks `claude/` docs and skills into `~/.claude/`, `~/.tmux.conf`, and the hook directory; it also installs terminfo and default plugins, and sources the fleet aliases from the active shell rc. The idempotent settings merge preserves unrelated configuration while adding directive capture, the knightwatch in-flight gate, and roborev's pre-commit context, pre-push, and pre-checkout hooks. The frozen legacy roborev installer still supplies the binary, daemon, and git hooks; Step 6's supported compatibility route always reapplies this Claude-hook inventory afterward. Existing real files and skill directories are backed up before symlinking, and install-root symlinks are refused. `OPERATOR.md`, the three operator skills, and `fleet-hosts` are not part of this list; they come from the overlay below.
+Symlinks `claude/` docs and skills into `~/.claude/`, `~/.tmux.conf`, and the hook directory; it also installs terminfo and default plugins, and sources the fleet aliases from the active shell rc. The idempotent settings merge preserves unrelated configuration while adding the knightwatch in-flight gate. The memory-capture nudges and roborev's pre-commit context, pre-push, and pre-checkout hooks come from kitchen (`kitchen setup` owns them). The frozen legacy roborev installer still supplies the binary, daemon, and git hooks; Step 6's supported compatibility route runs `kitchen setup` afterward. Existing real files and skill directories are backed up before symlinking, and install-root symlinks are refused. `OPERATOR.md`, the three operator skills, and `fleet-hosts` are not part of this list; they come from the overlay below.
 
 The same aggregate install links `codex/AGENTS.md` into `~/.codex/` and each
 Codex-native skill into `~/.agents/skills/`; it does not import Claude
@@ -93,10 +93,10 @@ The `playwright` skill and its MCP server come from [kitchen](https://github.com
 
 ## 6. (Optional) Always-on local commit review (roborev)
 
-Base `just install` wires the Claude hooks and skill but does not install the `roborev` binary, daemon, or git hooks. Install those once per machine through the compatibility recipe:
+Kitchen's `kitchen setup` wires the roborev Claude hooks and skill; nothing installs the `roborev` binary, daemon, or git hooks by default. Install those once per machine through the compatibility recipe:
 
 ```
 just install-roborev
 ```
 
-The recipe runs [`plow-pbc/seed-auto-roborev`](https://github.com/plow-pbc/seed-auto-roborev) at reviewed commit `83db20dcc8cb60b1eff73e06892b3140ec33b3d8` for the binary, user daemon, `core.hooksPath`, `post-commit`, and `post-rewrite`, then reapplies code-config's Claude hook inventory. That final ownership restore runs even when the legacy verifier fails, so its former `~/.config/roborev/claude-hooks/*` registrations cannot remain beside the repo-owned copies and double every gate. Run this recipe rather than invoking the deprecated SEED directly.
+The recipe runs [`plow-pbc/seed-auto-roborev`](https://github.com/plow-pbc/seed-auto-roborev) at reviewed commit `83db20dcc8cb60b1eff73e06892b3140ec33b3d8` for the binary, user daemon, `core.hooksPath`, `post-commit`, and `post-rewrite`, then runs `kitchen setup`, which owns the roborev Claude hooks. That restore runs even when the legacy verifier fails, so the legacy installer's `~/.config/roborev/claude-hooks/*` registrations are dropped instead of doubling every gate. Run this recipe rather than invoking the deprecated SEED directly.
