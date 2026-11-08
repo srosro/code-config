@@ -24,7 +24,7 @@ cat > "$tmp/current.json" <<'JSON'
 }
 JSON
 
-state=$(python3 codex/skills/babysit-pr/scripts/review-state.py --actor kwbot --input "$tmp/current.json")
+state=$(python3 codex/skills/babysit-pr/scripts/review-state.py --input "$tmp/current.json")   # actor defaults to REVIEW_BOT_LOGIN
 [[ "$(jq -r .covers_head <<<"$state")" == true ]] || fail "current review did not cover head"
 [[ "$(jq -r .trigger_after_review <<<"$state")" == false ]] || fail "old trigger counted after latest review"
 [[ "$(jq -r .latest_review_sha <<<"$state")" == abcdef0 ]] || fail "wrong latest review selected"

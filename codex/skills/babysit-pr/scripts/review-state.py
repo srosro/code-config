@@ -36,16 +36,6 @@ def load_pr(args):
     return json.loads(subprocess.check_output(command, text=True))
 
 
-def expected_actor(args):
-    if args.actor:
-        return args.actor.casefold()
-    if args.input:
-        raise ValueError("--actor is required with --input")
-    return subprocess.check_output(
-        ["gh", "api", "user", "--jq", ".login"], text=True
-    ).strip().casefold()
-
-
 def review_sha(body):
     for pattern in SHA_PATTERNS:
         match = pattern.search(body)
@@ -58,7 +48,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo")
     parser.add_argument("--pr", type=int)
-    parser.add_argument("--actor", help="expected KWR GitHub actor; defaults to authenticated user")
+    parser.add_argument("--actor", help="expected KWR GitHub actor; defaults to REVIEW_BOT_LOGIN")
     parser.add_argument("--input", help="read gh-pr-view-shaped JSON from a fixture")
     args = parser.parse_args()
     if not args.input and (not args.repo or args.pr is None):
@@ -67,7 +57,7 @@ def main():
     prefix = re.escape(operator_value("REVIEW_CMD_PREFIX"))
     trigger = re.compile(rf"(?m)^/{prefix}-(?:update-)?review\s*$")
     pr = load_pr(args)
-    actor = expected_actor(args)
+    actor = (args.actor or operator_value("REVIEW_BOT_LOGIN")).casefold()
     comments = sorted(pr.get("comments", []), key=lambda item: item.get("createdAt", ""))
     reviews = []
     for comment in comments:
