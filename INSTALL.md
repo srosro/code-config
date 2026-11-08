@@ -33,7 +33,7 @@ For development — writing config changes and running the `cleanup` skill, whic
 
 ## 2. Run install
 
-Requires [`just`](https://github.com/casey/just) and [`jq`](https://jqlang.github.io/jq/) (`brew install just jq` on macOS). `jq` is used to merge the canonical hook block in `claude/hooks/hooks.settings.json` (the two capture hooks, the knightwatch in-flight push gate, and roborev's pre-commit context, pre-push, and pre-checkout hooks) into `~/.claude/settings.json`.
+Requires [`just`](https://github.com/casey/just) and [`jq`](https://jqlang.github.io/jq/) (`brew install just jq` on macOS). `jq` is used to merge the canonical hook block in `claude/hooks/hooks.settings.json` (the knightwatch in-flight push gate) into `~/.claude/settings.json`.
 
 ```sh
 cd ~/services/code-config
