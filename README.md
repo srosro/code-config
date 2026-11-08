@@ -10,7 +10,7 @@ effects.
 
 - `claude/CLAUDE.md` — global rules loaded into every Claude session.
 - `claude/CODING_STANDARDS.md`, `REVIEW_PRACTICES.md`, `TESTING.md`, `AUTHORING.md`, `PR_LIFECYCLE.md` — referenced documents for specific domains.
-- `claude/skills/` — Claude Code skills invoked via slash commands or that auto-activate on trigger phrases. `zoom-out` and `agent-dispatch-brief` are **vendored** from [naveenspark/fancy-pants](https://github.com/naveenspark/fancy-pants) (MIT — see `claude/skills/FANCY_PANTS_LICENSE`) — copied verbatim so `just install` symlinks them onto every host like any other skill. To refresh them, re-copy the two dirs from upstream.
+- `claude/skills/` — Claude Code skills invoked via slash commands or that auto-activate on trigger phrases. Generic skills (`zoom-out`, `agent-dispatch-brief`, `playwright`) now ship with [kitchen](https://github.com/srosro/kitchen) and are linked by `kitchen setup`.
 - `codex/AGENTS.md` — the concise Codex-first global baseline.
 - `codex/skills/` — repo-owned Codex-native workflows installed into the
   standard `~/.agents/skills/` discovery root. The 14-skill

@@ -13,12 +13,9 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-# Keep the symlink checks offline + side-effect-free: `just install` now also
-# provisions the Playwright MCP server and installs the default plugins, which
-# we don't want firing against the temp HOMEs below (network, claude CLI,
-# browser download, marketplace clones). The setup script's own decision logic
-# is covered by check 9.
-export CONFIG_SKIP_MCP=1
+# Keep the symlink checks offline + side-effect-free: `just install` also installs
+# the default plugins, which we don't want firing against the temp HOMEs below
+# (network, claude CLI, marketplace clones).
 export CONFIG_SKIP_PLUGINS=1
 
 fail() { echo "✗ FAIL: $1" >&2; exit 1; }
@@ -205,8 +202,8 @@ while IFS='|' read -r -u 3 sh pre want absent; do
   cases=$((cases+1))
   tmp_cc="$(mktemp -d)"
   [[ "$pre" == "-" ]] || for f in $pre; do : > "$tmp_cc/$f"; done
-  CONFIG_SKIP_MCP=1 CONFIG_SKIP_PLUGINS=1 SHELL="/bin/$sh" HOME="$tmp_cc" just install >/dev/null
-  CONFIG_SKIP_MCP=1 CONFIG_SKIP_PLUGINS=1 SHELL="/bin/$sh" HOME="$tmp_cc" just install >/dev/null  # idempotency
+  CONFIG_SKIP_PLUGINS=1 SHELL="/bin/$sh" HOME="$tmp_cc" just install >/dev/null
+  CONFIG_SKIP_PLUGINS=1 SHELL="/bin/$sh" HOME="$tmp_cc" just install >/dev/null  # idempotency
   for f in $want; do
     grep -qF "$PWD/aliases.sh" "$tmp_cc/$f" || fail "[SHELL=$sh pre='$pre'] ~/$f missing goclaude source line"
     [[ "$(grep -cF "$PWD/aliases.sh" "$tmp_cc/$f")" == "1" ]] || fail "[SHELL=$sh pre='$pre'] ~/$f goclaude source line not idempotent"
@@ -287,8 +284,8 @@ mkdir -p "$tmp_pre/.claude"
 cat > "$tmp_pre/.claude/settings.json" <<'JSON'
 {"theme":"dark","hooks":{"PostToolUse":[{"matcher":"Edit","hooks":[{"type":"command","command":"echo pre-existing"}]}]}}
 JSON
-CONFIG_SKIP_MCP=1 HOME="$tmp_pre" just install >/dev/null
-CONFIG_SKIP_MCP=1 HOME="$tmp_pre" just install >/dev/null   # rerun → idempotency
+HOME="$tmp_pre" just install >/dev/null
+HOME="$tmp_pre" just install >/dev/null   # rerun → idempotency
 jq -e '.theme=="dark"' "$tmp_pre/.claude/settings.json" >/dev/null \
   || fail "settings merge dropped an unrelated top-level key (theme)"
 jq -e 'any(.hooks.PostToolUse[]; .matcher=="Edit")' "$tmp_pre/.claude/settings.json" >/dev/null \
@@ -322,7 +319,7 @@ mkdir -p "$tmp_mig/.claude"
 cat > "$tmp_mig/.claude/settings.json" <<'JSON'
 {"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"$HOME/.claude/hooks/roborev-pre-commit-context.py"},{"type":"command","command":"/home/u/.config/roborev/claude-hooks/roborev-pre-commit-context.py"}]},{"matcher":"Bash","hooks":[{"type":"command","command":"/home/u/.config/roborev/claude-hooks/roborev-pre-push-gate.py"}]},{"matcher":"Bash","hooks":[{"type":"command","command":"/home/u/xdg/roborev/claude-hooks/roborev-pre-checkout-gate.py"}]}]}}
 JSON
-CONFIG_SKIP_MCP=1 HOME="$tmp_mig" just install >/dev/null
+HOME="$tmp_mig" just install >/dev/null
 jq -e 'all(.hooks.PreToolUse[]?.hooks[]?; (.command // "") | contains("/.config/roborev/claude-hooks/") | not)' "$tmp_mig/.claude/settings.json" >/dev/null \
   || fail "install did not prune the stale seed-owned roborev PreToolUse[Bash] hooks (dangling-hook migration bug)"
 jq -e 'any(.hooks.PreToolUse[]?.hooks[]?; .command == "$HOME/.claude/hooks/roborev-pre-commit-context.py")' "$tmp_mig/.claude/settings.json" >/dev/null \
@@ -357,7 +354,7 @@ cat > "$seed_dir/ref/verify.sh" <<'SH'
 #!/bin/sh
 exit 23
 SH
-if CONFIG_SKIP_MCP=1 CONFIG_SKIP_PLUGINS=1 HOME="$tmp_robo_fail" PATH="$tmp_robo_fail/bin:$PATH" just install-roborev >/dev/null 2>&1; then
+if CONFIG_SKIP_PLUGINS=1 HOME="$tmp_robo_fail" PATH="$tmp_robo_fail/bin:$PATH" just install-roborev >/dev/null 2>&1; then
   fail "install-roborev hid the legacy verifier failure"
 fi
 grep -qF "checkout --detach --quiet 83db20dcc8cb60b1eff73e06892b3140ec33b3d8" "$tmp_robo_fail/git.log" \
@@ -775,66 +772,6 @@ grep -qF 'owned by another checkout' "$teardown_sh" \
 grep -qF -- '-f "$cfg"' "$teardown_sh" \
   && fail "teardown-dev-stack.sh must NOT feed the comma-joined config_files label into 'docker compose -f'" || true
 pass "cleanup Step 6b teardown (config_files ownership prefix-gate before down, sibling skip+report, no -f on the comma-joined label)"
-
-# 9. setup-playwright-mcp.sh derives the right registration flags per platform.
-#    Sourcing defines the functions without running main (BASH_SOURCE guard).
-#    macOS → headed; headless Linux → --headless + --executable-path pointing at
-#    the resolved browser (system Chromium when present, else the bundled build
-#    main() downloads and passes in). An empty path is the no-browser fallback.
-#    --no-sandbox is not part of this mapping — main() adds it per-host (below).
-[[ -x ./setup-playwright-mcp.sh ]] || fail "setup-playwright-mcp.sh missing or not executable"
-# shellcheck disable=SC1091
-source ./setup-playwright-mcp.sh
-got_mac=$(derive_mcp_args Darwin "")
-got_sys=$(derive_mcp_args Linux /usr/bin/chromium)
-got_bundled=$(derive_mcp_args Linux /home/x/.cache/ms-playwright/chromium-1224/chrome-linux64/chrome)
-got_none=$(derive_mcp_args Linux "")
-# --no-sandbox is NOT in the base mapping — main() adds it per-host only when
-# the sandboxed launch test fails, so the sandbox stays on where it works.
-[[ "$got_mac" == "--isolated" ]] || fail "macOS should register headed (--isolated only): got '$got_mac'"
-[[ "$got_sys" == "--isolated --headless --executable-path /usr/bin/chromium" ]] \
-  || fail "Linux + system chromium should reuse it headless: got '$got_sys'"
-[[ "$got_bundled" == "--isolated --headless --executable-path /home/x/.cache/ms-playwright/chromium-1224/chrome-linux64/chrome" ]] \
-  || fail "Linux + bundled chromium must wire --executable-path too: got '$got_bundled'"
-[[ "$got_none" == "--isolated --headless" ]] \
-  || fail "Linux with no resolvable browser should fall back to headless only: got '$got_none'"
-pass "setup-playwright-mcp.sh derives correct per-platform MCP flags (sandbox on by default)"
-
-# 9b. main() regression guard: the pure derive_mcp_args mapping above passed even
-#     against the old code, because the bug was in main()'s *wiring* — it derived
-#     args from the system-only $chromium instead of the resolved (bundled)
-#     test_bin, so a headless Linux host with no system Chromium registered with
-#     NO --executable-path and fell back to the absent `chrome` channel. Drive the
-#     real main() with that host's shape faked (no system chromium, bundled build
-#     resolved) and assert the `claude mcp add` argv carries --executable-path
-#     <bundled chrome>. This FAILS against the pre-fix main() and passes after.
-tmp_mcp="$(mktemp -d)"
-trap 'rm -rf "$tmp" "$tmp2" "$tmp3" "$tmp_mcp"' EXIT
-mkdir -p "$tmp_mcp/bin" "$tmp_mcp/pw/chrome-linux64" "$tmp_mcp/.claude"
-export CLAUDE_ARGV_LOG="$tmp_mcp/argv.log"; : > "$CLAUDE_ARGV_LOG"
-# fake claude: log argv (so we can assert `mcp add`); print nothing for `mcp list`
-# so main's exact-match fast-path misses and it proceeds to (re-)register.
-printf '#!/usr/bin/env bash\necho "$*" >> "$CLAUDE_ARGV_LOG"\n' > "$tmp_mcp/bin/claude"
-# fake bundled chrome: launch_ok just needs a clean exit for the sandboxed probe.
-printf '#!/usr/bin/env bash\nexit 0\n' > "$tmp_mcp/pw/chrome-linux64/chrome"
-chmod +x "$tmp_mcp/bin/claude" "$tmp_mcp/pw/chrome-linux64/chrome"
-# Fake just this host's external surface — no real download, no real browser:
-find_claude() { echo "$tmp_mcp/bin/claude"; }
-uname() { echo Linux; }                                         # force the Linux branch on any host
-# Deny any browser channel (not just the two probed today) so the "no system
-# browser" shape holds regardless of what the runner has installed; delegate
-# everything else (jq etc.) to the real builtin.
-command() { if [[ "$1" == -v ]]; then case "$2" in chromium|chromium-browser|google-chrome|google-chrome-stable|chrome|chrome-browser) return 1;; esac; fi; builtin command "$@"; }
-# Narrow stubs to the exact calls main() makes — an unexpected npm/npx invocation
-# fails loudly (set -e) instead of being silently absorbed by a catch-all.
-npm() { case "$*" in view*dependencies.playwright) echo "1.61.0";; *) echo "unexpected npm: $*" >&2; return 1;; esac; }
-npx() { case "$*" in *--dry-run*) echo "Install location: $tmp_mcp/pw";; *"install chromium"*) : ;; *) echo "unexpected npx: $*" >&2; return 1;; esac; }
-HOME="$tmp_mcp" CONFIG_SKIP_MCP='' main >/dev/null 2>&1
-unset -f find_claude uname command npm npx
-grep -qF -- "mcp add -s user playwright -- npx @playwright/mcp@$MCP_VERSION --isolated --headless --executable-path $tmp_mcp/pw/chrome-linux64/chrome" "$CLAUDE_ARGV_LOG" \
-  || fail "main() must register --executable-path <bundled chrome> on headless Linux w/o system chromium; got: $(cat "$CLAUDE_ARGV_LOG")"
-unset CLAUDE_ARGV_LOG
-pass "setup-playwright-mcp.sh main() wires --executable-path to the bundled Chromium (headless Linux, no system browser)"
 
 # 10. Fresh-host plugin guard: the official marketplace must be ADDED before
 #     superpowers is INSTALLED. On a freshly-imaged host the marketplace isn't
