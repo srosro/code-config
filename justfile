@@ -331,6 +331,7 @@ install-roborev:
         # kitchen owns the roborev Claude hooks: its setup drops the legacy installer's
         # copies and re-adds its own. Its exit code also covers unrelated readiness
         # checks, so it is not treated as this recipe's failure.
+        command -v kitchen >/dev/null || { echo "FATAL: kitchen is not installed, so the roborev Claude hooks have no owner" >&2; exit 1; }
         kitchen setup >/dev/null || echo "note: kitchen setup reported unready checks; run it to see them" >&2
         if [[ "$rc" -eq 0 ]]; then
             echo "✓ roborev binary, daemon and git hooks installed + verified; kitchen setup re-applied its Claude hooks"
