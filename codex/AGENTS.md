@@ -52,17 +52,6 @@
   from that runtime. A session that touches a `~/services` checkout leaves it
   matching `origin`: trace and archive untracked residue rather than deploying
   around it; tracked edits there stop and ask.
-- `AGENT_LIVE=1` and its transition prompt are an additional runtime safeguard,
-  not authorization to change a customer agent. Do not set
-  `AGENT_TRANSITION_ACK=1` to cross the stewardship boundary in `~/.codex/OPERATOR.md`.
-- An authorized mutation of a customer agent is carried in place by the
-  operator with the customer's state preserved — never as a step the customer
-  performs (re-provision, re-login, re-setup). Do the in-place path first:
-  compute the delta between what they run and what they should run, rehearse
-  it on a throwaway of their exact artifact, apply it with a rollback staged,
-  and verify in their runtime. Propose a customer-visible step only when no
-  operator path exists, named as such with its cost, and report what a live
-  restart still costs them rather than assuming it away.
 - Assume other agents and users share the filesystem. Inspect Git status,
   branch, and live remote state before diagnosing recent behavior or making
   mutations; stay in the checkout where the session began; preserve unknown
@@ -80,69 +69,27 @@
 
 ## Pull requests and convergence
 
-- Never publish to a repository the operator does not own — no pull request, no
-  issue, no review comment — without explicit human consent naming that target
-  repository; for `NousResearch/hermes-agent` the answer is no outright. Before publication, verify the
-  base repository is operator-controlled. A writable fork, contributor access,
-  an upstream issue, or a generic request to open a PR does not authorize
-  publication to an upstream or otherwise third-party base; push an
-  operator-controlled branch and hand it off instead. Consent names the
-  repository, not a body of work. Once it has been given, either in the session
-  or as standing consent whose record quotes the operator naming that
-  `owner/repo`, later PRs there that serve a task the operator approved need no
-  re-ask. A new, unrelated task still needs its own go-ahead. Put any behavior
-  change such a PR carries (a model, a default, a dependency) at the top of its
-  body.
-- Consent authorizes a target, never an artifact. A third-party PR carries the
-  same head that converged under review on an operator-controlled repo — never
-  a hand-ported, re-derived or freshly written branch. The test is `headRefOid`
-  equality, or, when a cross-fork stack forces a rebase onto upstream's `main`,
-  `git range-diff <old-base>..<converged-head> <new-base>..<upstream-head>`
-  showing every commit unchanged. Matching additions/deletions is not that test.
-- Every PR body fills the PR template's fields at open, including expected net
-  LOC (adds minus deletes) and new moving parts. Merge authority is standing on
-  an operator-owned repo (incl. `plow-pbc/*`) when the converged head has green
-  required checks, no `REVIEW_REQUIRED`, actual within budget with no
-  `needs-sam` label, and no scope growth past the PR's stated intent. Blocked when actual > expected +
-  0.4×|expected| + 50 (`~100` → over +190): label it `needs-sam`. Any miss
-  means explicit consent for that exact PR.
-  Approval, green CI, continuation requests and autonomy or deploy mandates add
-  no authority. Pins (below) and cleanup PRs keep their own rules.
+- Before opening, publishing or merging a PR, read and follow
+  `~/.claude/PR_LIFECYCLE.md` § Open: the third-party publication gate
+  (exact-target consent; `NousResearch/hermes-agent` never), the template's
+  expected size, standing merge authority within that size's budget (the
+  over-budget label and approver come from `~/.config/kitchen/operator.env`),
+  and the pointer-only pin-PR exception. A third-party PR carries the same head
+  that converged on an operator-controlled repo, per `~/.claude/CLAUDE.md`
+  § Branch Workflow step 3.
 - Never merge before the current head is converged. A push invalidates prior
   convergence; mergeability, green checks, or a review of an older SHA cannot
   substitute for a clean convergence gate on the exact commit being merged.
-  Pin PRs excepted, per the pin bullet below.
+  Pin PRs excepted, per § Open.
 - Every code or configuration change goes on a feature branch and through a
   pull request. Commit and push the branch without asking. Open the PR without
   asking only when its base is operator-controlled or the human has given the
   exact-target third-party consent required above. Immediately run
-  `$babysit-pr <PR>` — pointer-only pin PRs never enter the loop; the pin
-  bullet above is their whole lifecycle — and continue until the head is
-  converged; an open
+  `$babysit-pr <PR>` (pointer-only pin PRs never enter the loop) and
+  continue until the head is converged; an open
   PR, green CI, or a clean review alone is not completion. If the workflow is
   not installed in the current Codex environment, perform the same
   monitor/review/fix/re-review loop manually rather than stopping.
-- Scoped exception — a pointer-only pin PR merges after one addressed KWR
-  review. A pin PR changes only a pointer to code already reviewed where it
-  lives: a `revision`, a `FROM …@sha256:…` line, a vendored tarball SHA. Let
-  one KWR review land, triage it through the normal fence, then merge on green
-  required checks pinned to the exact head. One review is floor and ceiling:
-  green CI alone misses a bad pointer, but a pointer bump does not earn a full
-  convergence loop, so do not wait for a clean second round. A pin PR never
-  enters `$babysit-pr`: this bullet is its whole lifecycle, so the loop's
-  re-review-per-head, convergence, and merge-authority rules do not apply, and
-  the babysit skill carries no pin branch. Addressing the one review is
-  expected to move the head and owes no re-review. No per-PR consent and no
-  repin request — pin authority is standing, for every hop a merge unblocks. Anything beyond the
-  pointer makes it an ordinary PR again, merge rule included — code riding
-  along, a backwards pin, a red required check, a review that left outstanding
-  items or an unresolved debate, or a repo whose ruleset holds it at
-  `reviewDecision=REVIEW_REQUIRED` (an approval no bot can supply and
-  `--admin` cannot bypass). Addressed means resolved, not merely replied to: a
-  probe you declined on a judgment the operator has not ruled on is an
-  outstanding item — hand it off rather than merging over it. So read
-  `mergeable`/`reviewDecision` before merging and hand off a gate you cannot
-  clear; never merge blind on green.
 - During convergence, treat both your judgment and reviewer findings as
   fallible. Read the full finding and review history, verify the claimed
   mechanism, and judge it against the user's intent and the system's operating
