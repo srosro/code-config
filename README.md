@@ -59,4 +59,4 @@ Run periodically after a substantive session. It audits every user turn for avoi
 
 ### roborev — always-on local commit review
 
-The cheap local first pass: reviews **every commit on this machine** and surfaces open findings before the next commit and before push. Base `just install` owns the Claude hooks and skill; opt-in `just install-roborev` invokes the frozen legacy installer for the binary, daemon, and git hooks, then restores code-config's Claude-hook ownership. See [`INSTALL.md` Step 6](INSTALL.md).
+The cheap local first pass: reviews **every commit on this machine** and surfaces open findings before the next commit and before push. Kitchen owns the roborev Claude hooks and skill (`kitchen setup`); opt-in `just install-roborev` invokes the frozen legacy installer for the binary, daemon, and git hooks, then runs `kitchen setup` and checks it took the hooks back. See [`INSTALL.md` Step 6](INSTALL.md).

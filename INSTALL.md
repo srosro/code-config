@@ -93,7 +93,7 @@ The `playwright` skill and its MCP server come from [kitchen](https://github.com
 
 ## 6. (Optional) Always-on local commit review (roborev)
 
-Base `just install` wires the Claude hooks and skill but does not install the `roborev` binary, daemon, or git hooks. Install those once per machine through the compatibility recipe:
+Kitchen's `kitchen setup` wires the roborev Claude hooks and skill; nothing installs the `roborev` binary, daemon, or git hooks by default. Install those once per machine through the compatibility recipe:
 
 ```
 just install-roborev

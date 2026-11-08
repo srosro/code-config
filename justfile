@@ -192,10 +192,10 @@ install-claude:
     # than the skippable network steps above (MCP, plugins): it mutates global
     # git config, installs a daemon, and fetches + runs the roborev binary.
     # `just install-roborev` is the supported compatibility route: it runs the
-    # frozen installer for the binary, daemon, and git hooks, then restores this
-    # repo's Claude-hook ownership even when legacy verification fails.
+    # frozen installer for the binary, daemon, and git hooks, then runs kitchen
+    # setup (owner of the roborev Claude hooks) even when legacy verification fails.
     echo "note: to enable always-on local commit review (roborev), run: just install-roborev"
-    echo "      (code-config owns Claude hooks; the frozen legacy installer supplies the binary, daemon, and git hooks)"
+    echo "      (kitchen setup owns the roborev Claude hooks; the frozen legacy installer supplies the binary, daemon, and git hooks)"
 
 # Install Codex-native global guidance, repo-owned skills, and the pinned
 # upstream Superpowers plugin. Auth, history, memories, and sessions remain
