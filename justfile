@@ -187,17 +187,12 @@ install-claude:
     done
     echo "sourced fleet aliases (goclaude) from shell rc"
 
-    # Provision the Playwright MCP server (powers the `playwright` skill),
-    # per-platform. No-op once set up; self-skips without the claude CLI.
-    # CONFIG_SKIP_MCP=1 skips it (smoke-install.sh sets this).
-    "{{justfile_directory()}}/setup-playwright-mcp.sh"
-
     # Default plugins every machine should have. The headless CLI is idempotent
     # (marketplace add / plugin install no-op when already present) and writes
     # enabledPlugins + extraKnownMarketplaces into ~/.claude/settings.json itself.
     # CONFIG_SKIP_PLUGINS=1 skips it (smoke-install.sh sets this — keeps the
-    # symlink checks offline). CLI resolution mirrors setup-playwright-mcp.sh's
-    # find_claude: login shells on some boxes miss ~/.local/bin from PATH.
+    # symlink checks offline). CLI resolution falls back to ~/.local/bin:
+    # login shells on some boxes miss it from PATH.
     CLAUDE_BIN="$(command -v claude || true)"
     [[ -z "$CLAUDE_BIN" && -x "$HOME/.local/bin/claude" ]] && CLAUDE_BIN="$HOME/.local/bin/claude"
     if [[ "${CONFIG_SKIP_PLUGINS:-}" == "1" ]]; then
@@ -349,7 +344,7 @@ install-roborev:
     restore_claude_hooks() {
         rc=$?
         trap - EXIT
-        if ! CONFIG_SKIP_MCP=1 CONFIG_SKIP_PLUGINS=1 just --justfile "$JUSTFILE" install-claude; then
+        if ! CONFIG_SKIP_PLUGINS=1 just --justfile "$JUSTFILE" install-claude; then
             echo "FATAL: could not restore code-config's Claude hooks after the legacy roborev install" >&2
             exit 1
         fi

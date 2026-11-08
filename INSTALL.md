@@ -40,7 +40,7 @@ cd ~/services/code-config
 just install
 ```
 
-Symlinks `claude/` docs and skills into `~/.claude/`, the `tc` CLI into `~/.local/bin`, `~/.tmux.conf`, and the hook directory; it also installs terminfo, provisions Playwright MCP and default plugins, and sources the fleet aliases from the active shell rc. The idempotent settings merge preserves unrelated configuration while adding directive capture, the knightwatch in-flight gate, and roborev's pre-commit context, pre-push, and pre-checkout hooks. The frozen legacy roborev installer still supplies the binary, daemon, and git hooks; Step 6's supported compatibility route always reapplies this Claude-hook inventory afterward. Existing real files and skill directories are backed up before symlinking, and install-root symlinks are refused. `OPERATOR.md`, the three operator skills, and `fleet-hosts` are not part of this list; they come from the overlay below.
+Symlinks `claude/` docs and skills into `~/.claude/`, the `tc` CLI into `~/.local/bin`, `~/.tmux.conf`, and the hook directory; it also installs terminfo and default plugins, and sources the fleet aliases from the active shell rc. The idempotent settings merge preserves unrelated configuration while adding directive capture, the knightwatch in-flight gate, and roborev's pre-commit context, pre-push, and pre-checkout hooks. The frozen legacy roborev installer still supplies the binary, daemon, and git hooks; Step 6's supported compatibility route always reapplies this Claude-hook inventory afterward. Existing real files and skill directories are backed up before symlinking, and install-root symlinks are refused. `OPERATOR.md`, the three operator skills, and `fleet-hosts` are not part of this list; they come from the overlay below.
 
 The same aggregate install links `codex/AGENTS.md` into `~/.codex/` and each
 Codex-native skill into `~/.agents/skills/`; it does not import Claude
@@ -89,25 +89,7 @@ jq '. + {skipDangerousModePermissionPrompt: true}' ~/.claude/settings.json \
 
 ## 5. Playwright MCP server (browser debugging)
 
-Powers the `playwright` skill (front-end debugging in a real browser). **`just install` provisions this automatically** — `setup-playwright-mcp.sh` runs at the end of the install and registers the server per-machine (it lives in `~/.claude.json`, outside the symlink model), picking browser flags by platform:
-
-- **macOS** — the pinned `@playwright/mcp` (version in `setup-playwright-mcp.sh`) with `--isolated`, headed so you can watch; Chromium installs on first use.
-- **Linux with a system Chromium** (e.g. the Pi kiosk) — reuses it via `--executable-path`, `--headless`. No download.
-- **Linux without one** (e.g. a headless server) — downloads Playwright's matching Chromium to `~/.cache` (no sudo), then registers `--executable-path` to *that* bundled binary, `--headless`. The explicit path is load-bearing: without it the server falls back to the absent `chrome` channel and every navigation fails.
-
-On Linux the script keeps the Chromium sandbox on (page content is untrusted) and adds `--no-sandbox` **only** on a host where the sandboxed launch test actually fails — e.g. a kernel with unprivileged user namespaces disabled. So the sandbox stays wherever it works, and a host that can't sandbox still gets a working browser automatically, no manual flag.
-
-`--isolated` gives a fresh in-memory profile each session (no access to your real Chrome logins). The script also allowlists the two screen-only read-only tools (`browser_snapshot`, `browser_take_screenshot`); `browser_console_messages` / `browser_network_requests` stay gated because console/network can carry tokens not visible on the page. It's idempotent (re-runs no-op), self-skips when the `claude` CLI is absent, and `CONFIG_SKIP_MCP=1 just install` skips it.
-
-The version is pinned (not `@latest`) so a fresh setup can't silently pull unreviewed browser-server code; the bundled-Chromium download derives its Playwright version from that same pin. Bump `MCP_VERSION` in `setup-playwright-mcp.sh` deliberately and re-verify the skill's tool names.
-
-**Troubleshooting (headless Linux):** if the install's launch test reports Chromium failed to start on missing OS libs, run the one `sudo` command it prints, once on that host (no passwordless sudo needed at install time, so this step is manual):
-
-```sh
-sudo npx playwright@<version> install-deps chromium
-```
-
-Verify any host with `claude mcp list`: it should read `playwright … ✓ Connected` **and**, on Linux without a system Chromium, carry `--executable-path <bundled chrome>` in the command. `✓ Connected` only proves the MCP handshake — the browser resolves lazily on first navigation, so a missing `--executable-path` still shows Connected yet fails every navigate.
+The `playwright` skill and its MCP server come from [kitchen](https://github.com/srosro/kitchen): `kitchen setup` links the skill and registers the server. See kitchen's README.
 
 ## 6. (Optional) Always-on local commit review (roborev)
 
