@@ -258,7 +258,7 @@ knightwatch does NOT re-review automatically on push — it auto-reviews on PR o
 **In-flight latch — never push onto a running review.** A knightwatch run snapshots the head at run-start and takes ~20-40 min; a push mid-run stales it (26% of all reviews across 60 recent plow PRs self-labeled `head moved mid-run`; whole-PR rounds staled at 45%). This latch is the cooperative path; the `$HOME/.claude/hooks/knightwatch-inflight-push-gate.py` PreToolUse[Bash] gate is the **enforcement backstop** — it fires on *every* Claude `git push` **and** on any trigger post carrying the `KNIGHTWATCH_REVIEW_TRIGGER=1` marker (Step 6.6), for the main loop AND dispatched subagents — denying with an assess-and-wait advisory when a review is live. Both perturb a running review — a push stales it, a trigger stacks a second one behind it — so neither a subagent's push (plow#1036) nor a stacked trigger (the #1102 duplicate) slips past this prose latch. The gate identifies a trigger by the marker rather than parsing the gh/jq command (Step 6.6 owns the marker contract). (The "verify coverage on landing" guard above stays the correctness backstop; the gate is thrash-prevention.) Before ANY `git push` on the PR branch, determine review status:
 
 - **gh-side (no extra calls — Step 2's data):** in flight iff there's a live `👀 reviewing` starter (the reviewer POSTs it at run-start and **DELETEs** it on success — posting the `📋` review as a separate comment — and PATCHes it to non-`👀` text only on abort), or a trigger comment (yours or another session's) postdates the last landed review.
-- **Authoritative probe (reviewer host):** when the gh-side signal is ambiguous or a hold exceeds ~30 min, read the reviewer's own state on `wakeup` (run locally when `hostname` is already `wakeup` — never self-SSH — else via `source ~/services/code-config/lib/fleet.sh; KWR_USER=$(fleet_user wakeup); ssh "$KWR_USER@wakeup" …`):
+- **Authoritative probe (reviewer host):** when the gh-side signal is ambiguous or a hold exceeds ~30 min, read the reviewer's own state on `wakeup` (run locally when `hostname` is already `wakeup` — never self-SSH — else via `source ~/services/kitchen/src/claude_kitchen/tc/lib/fleet.sh; KWR_USER=$(fleet_user wakeup); ssh "$KWR_USER@wakeup" …`):
   `CID=$(docker ps -q --filter name=knightwatch-reviewer-reviewer- | head -1); docker exec "$CID" sh -c 'run=$(ls -td /shared/runs-by-pr/<org>_<repo>/<PR#>/* 2>/dev/null | head -1); [ -n "$run" ] && cat "$run/meta.json"'`
   (The name filter is substring-based, so it matches any reviewer account — `reviewer-1`, `reviewer-2`, …; every container in the compose project reads the same `/shared` volume, so exec'ing into whichever matches first is correct. An **empty CID** — no matching container — is UNKNOWN, not "no run in flight": keep the latch CLOSED and rely on the gh-side signal / 30-min tick, never push on it.)
   Decide from that `meta.json` alone: present with no `finished_at` = in flight (latch CLOSED); `status: aborted` = superseded/cancelled; `status: completed` = landed. No run dir at all = not started — fall back to the gh-side signal (a trigger comment newer than the last landed review means a run is queued → latch CLOSED). No run in flight and none queued → the latch is open; push.
@@ -388,7 +388,7 @@ Final summary (either branch) — **lead with the § Answer Shape banner**, arms
 `wakeup` is the host running knightwatch-reviewer; its login comes from the private host table via `fleet_user`.
 
 ```bash
-source ~/services/code-config/lib/fleet.sh; KWR_USER=$(fleet_user wakeup)
+source ~/services/kitchen/src/claude_kitchen/tc/lib/fleet.sh; KWR_USER=$(fleet_user wakeup)
 if [[ "$(hostname)" == "wakeup" ]]; then
   REACHABLE=1   # local tail — no SSH needed
 else
@@ -404,7 +404,7 @@ The Monitor is **purely a wake signal — it makes zero GitHub API calls**, repl
 Monitor(
   description="babysit-pr: new comments on <owner>/<repo>#<PR#>",
   command="""
-    source ~/services/code-config/lib/fleet.sh; KWR_USER=$(fleet_user wakeup)
+    source ~/services/kitchen/src/claude_kitchen/tc/lib/fleet.sh; KWR_USER=$(fleet_user wakeup)
     WAKE='CID=$(docker ps -q --filter ancestor=knightwatch-reviewer:dev | head -1); if [ -n "$CID" ]; then PROJ=$(docker inspect "$CID" --format "{{index .Config.Labels \"com.docker.compose.project\"}}"); timeout 1740 docker compose -p "$PROJ" logs --tail 0 -f --no-log-prefix 2>/dev/null; else sleep 1740; fi'
     if [[ "$(hostname)" == "wakeup" ]]; then
       bash -c "$WAKE"

@@ -18,7 +18,7 @@ effects.
   its official Codex plugin, pinned to release `v6.3.0` commit
   `b36e0829c6d0140e93cfef2ca599b1b07d4a7797`, so its skills retain names such as
   `$superpowers:systematic-debugging`.
-- `tc` (+ `lib/fleet.sh`, `lib/pick.sh`, `lib/claim.sh`) — the fleet tmux/checkout CLI (see below). `just install` symlinks `tc` into `~/.local/bin`; the `lib/` helpers resolve relative to it.
+- `lib/pick.sh`, `lib/claim.sh` — the slot picker and claim lock the `cleanup` skill sources until it moves to kitchen too (kitchen ships `tc` with its own copies).
 - `aliases.sh` — fleet shell aliases sourced from your interactive shell rc
   (`~/.bashrc` and/or `~/.zshrc`) by `just install`: `goclaude` and `gocodex`;
   Codex retains its normal sandbox and approval boundary.
@@ -31,20 +31,7 @@ machine.
 
 ## `tc` — fleet tmux/checkout tool
 
-Collapses the `ssh -t <host> 'tmux new -A -s …'` + `cd ~/Hacking/<repo>` ritual into one command, with consistent `<tag><N>-<host>` session names and the right start dir. Checkouts are uniform numbered slots `~/Hacking/<repo>0..<repo>9`. `<repo>` accepts a short tag (`kwr`) or the full dir name (`knightwatch-reviewer`).
-
-```sh
-tc <repo> <N> <host>        # attach/create slot N:  ~/Hacking/<repo><N>  → <tag><N>-<host>
-tc new <repo> <host>        # next FREE workspace (on main + clean + not busy), scanning <repo>0..9
-tc claim <repo> <branch> [N]  # headless: claim a free local slot, or exact slot N; checkout -b <branch>
-tc setup <repo> <host> [url]  # clone <repo>0..<repo>9 on <host> (idempotent)
-```
-
-`tc` needs a host table at `~/.config/code-config/fleet-hosts` (override with `CODE_CONFIG_FLEET_HOSTS`), one `<host> <user> [alias]` row per line; host-dependent `tc` commands (connect, `new`, `setup`) and the fleet helpers fail loudly without it; `tc claim` is local and still works. `tests/fixtures/fleet-hosts` shows the shape; the optional alias gives a host one short name (a row `laptop-pro alice lp` lets `tc plow 5 lp` reach it). Edit the tag map (short tag → repo dir) at the top of `lib/fleet.sh`. Running `tc … <thishost>` runs tmux locally instead of SSH-to-self. `tc setup` supersedes the old `clone-siblings.sh`: it resolves the git URL from `<repo>0`'s `origin` — falling back to a legacy bare `~/Hacking/<repo>` checkout — or takes an explicit `[url]`. A legacy bare checkout is otherwise ignored: `tc` no longer attaches to it, scans it, or clones it, so fleets migrate organically to the numbered slots.
-
-A remote host needs `tmux` resolvable from a **non-login** shell — `ssh host cmd` gets a bare PATH, so a Homebrew or `~/.local/bin` tmux is invisible unless `~/.zshenv` adds its dir. Linux hosts get this free (`/usr/bin/tmux`); macOS ones may not.
-
-`tc` ssh's to the bare short hostname, so it must resolve from the calling host (MagicDNS short names, or `~/.ssh/config` entries).
+`tc` now ships with [kitchen](https://github.com/srosro/kitchen) (`kitchen setup` links it into `~/.local/bin`); see kitchen's README. It reads the private overlay's host table and repo tags from `~/.config/kitchen/`.
 
 ## Operator overlay
 

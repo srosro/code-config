@@ -40,7 +40,7 @@ cd ~/services/code-config
 just install
 ```
 
-Symlinks `claude/` docs and skills into `~/.claude/`, the `tc` CLI into `~/.local/bin`, `~/.tmux.conf`, and the hook directory; it also installs terminfo and default plugins, and sources the fleet aliases from the active shell rc. The idempotent settings merge preserves unrelated configuration while adding directive capture, the knightwatch in-flight gate, and roborev's pre-commit context, pre-push, and pre-checkout hooks. The frozen legacy roborev installer still supplies the binary, daemon, and git hooks; Step 6's supported compatibility route always reapplies this Claude-hook inventory afterward. Existing real files and skill directories are backed up before symlinking, and install-root symlinks are refused. `OPERATOR.md`, the three operator skills, and `fleet-hosts` are not part of this list; they come from the overlay below.
+Symlinks `claude/` docs and skills into `~/.claude/`, `~/.tmux.conf`, and the hook directory; it also installs terminfo and default plugins, and sources the fleet aliases from the active shell rc. The idempotent settings merge preserves unrelated configuration while adding directive capture, the knightwatch in-flight gate, and roborev's pre-commit context, pre-push, and pre-checkout hooks. The frozen legacy roborev installer still supplies the binary, daemon, and git hooks; Step 6's supported compatibility route always reapplies this Claude-hook inventory afterward. Existing real files and skill directories are backed up before symlinking, and install-root symlinks are refused. `OPERATOR.md`, the three operator skills, and `fleet-hosts` are not part of this list; they come from the overlay below.
 
 The same aggregate install links `codex/AGENTS.md` into `~/.codex/` and each
 Codex-native skill into `~/.agents/skills/`; it does not import Claude
@@ -58,10 +58,10 @@ Restart Codex after installation so the 14 namespaced skills, including
 The author's private overlay, `code-config-private`, adds `~/.claude/OPERATOR.md` (imported by `CLAUDE.md`), `~/.codex/OPERATOR.md`, the `tailscale-ssh`, `deploy`, and `latch` skills, and the `tc` host table `~/.config/code-config/fleet-hosts`. Clone it beside this repo (`~/services/code-config-private` on a deploy host) and run `just install` there after the step above, then verify:
 
 ```sh
-readlink ~/.claude/OPERATOR.md ~/.config/code-config/fleet-hosts
+readlink ~/.claude/OPERATOR.md ~/.config/kitchen/fleet-hosts
 ```
 
-Without it, install is complete but host-dependent `tc` commands (connect, `new`, `setup`) and the fleet helpers fail loudly until you create `fleet-hosts` yourself (`<host> <user> [alias]` per line; see `tests/fixtures/fleet-hosts`); `tc claim` is local and still works.
+Without it, install is complete, but kitchen's host-dependent `tc` commands (connect, `new`, `setup`) and the fleet helpers fail loudly until you create `~/.config/kitchen/fleet-hosts` yourself (`<host> <user> [alias]` per line; kitchen's `tests/shell/fixtures/fleet-hosts` shows the shape). `tc claim` is local and still works.
 
 ## 3. Default plugins
 
