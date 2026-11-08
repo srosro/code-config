@@ -351,9 +351,9 @@ The point is to surface a gap **at the round where it opens** rather than at han
 On a PR in a repo the operator owns, post to `BUILD_TRACKING_ROOM` with the harness's Swarm tools (`send`) only when the PR merges or is blocked. Post nothing on open or convergence. Lead each post with the PR's bare URL, which Element links:
 
 - **Merged** — right after Step 7's merge action: `✅ **MERGED** — https://github.com/<owner>/<repo>/pull/<N> · <what, one line> · complexity E ~<E> → A <net> net · UX: <the body's User experience impact>`.
-- **Blocked** — when Step 6.7 sets `<approval label>`, a UX regression turns up, or anything else only a human can clear: `🛑 **BLOCKED** — https://github.com/<owner>/<repo>/pull/<N> · <why, one line> · complexity E ~<E> → A <net> net · UX: <…> · needs: <who/what>`, ending `· head <short SHA>` when it waits on `<approval label>`.
+- **Blocked** — once per converged head that carries `<approval label>`, or when a UX regression turns up or anything else only a human can clear: `🛑 **BLOCKED** — https://github.com/<owner>/<repo>/pull/<N> · <why, one line> · complexity E ~<E> → A <net> net · UX: <…> · needs: <who/what>`, ending `· head <short SHA>` when it waits on `<approval label>`.
 
-`<E>` is `?` when the PR declares no size. A restarted session may post twice; that is accepted.
+`<E>` is `?` when the PR declares no size. A restarted session may post twice; that is accepted. A BLOCKED PR has no standing merge authority until what it needs is cleared.
 
 **With `<approval label>`, the merge waits for `<approver>`'s ok**: a Swarm reply to that BLOCKED post, from `APPROVER_SENDER` (Swarm authenticates the sender; GitHub can't, since agents act as the operator's account there), saying ok and naming the current head's short SHA. Any other sender, or an ok naming an older SHA, doesn't count, and a new head needs a new BLOCKED post and a fresh ok. That ok is the per-PR consent `PR_LIFECYCLE.md` § Open asks for; on it, run Step 7's merge action. **An agent without Swarm tools (a cook)** puts the exact MERGED or BLOCKED post in its report for the sous to post, and for `<approval label>` waits for the sous to relay `<approver>`'s ok naming the current head SHA.
 
