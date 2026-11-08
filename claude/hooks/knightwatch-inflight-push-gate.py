@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""PreToolUse[Bash] gate — when a `git push` OR a `/srosro-*review` re-review
+"""PreToolUse[Bash] gate — when a `git push` OR a knightwatch re-review
 trigger is about to run while a knightwatch review is in flight on this branch's
 PR, DENY it and hand the judgment to the LLM: wait for the review, or proceed
 once it's done. Both are ways to perturb a running review — a push stales the
 snapshotted head, a trigger stacks a second (possibly-stale) review behind it —
 so the latch covers both, not just the push (see plow-pbc/knightwatch-reviewer's
-#1102, where a babysit `/srosro-review` stacked on a running review).
+#1102, where a babysit whole-PR re-review stacked on a running review).
 
 This enforces babysit-pr's in-flight latch for EVERY agent — main loop and
 dispatched subagents alike (a subagent obeys this hook the way it already obeys
@@ -45,13 +45,16 @@ documented cwd-scope gap — not parsed out of the command.
 
 FAIL-OPEN: any error (no gh, no PR, network, unparseable) allows the push — a
 broken gh must never wedge pushes fleet-wide, and review staleness is recoverable.
+The one loud exception: a missing operator config (the bot's login) exits 1, which
+Claude Code shows as a hook error without blocking the push.
 """
 import json
 import re
 import subprocess
 import sys
+from pathlib import Path
 
-BOT_USER = "srosro"  # the review bot signs its posts as this login
+OPERATOR_ENV = Path.home() / ".config" / "kitchen" / "operator.env"
 AUTO_POST_MARKER = "<!-- knightwatch-reviewer:auto-post -->"  # on every bot auto-post
 REVIEWING_TOKEN = "👀 reviewing"  # a live starter's visible content leads with this
 # The env-var marker the babysit prefixes onto every trigger post (see module
@@ -60,13 +63,22 @@ REVIEW_TRIGGER_MARKER = "KNIGHTWATCH_REVIEW_TRIGGER=1"
 _HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
 
 
-def _is_live_starter(c: dict) -> bool:
+def operator_value(key: str) -> str:
+    """One KEY=value from the operator's config; KeyError names what's missing."""
+    for line in OPERATOR_ENV.read_text().splitlines():
+        k, sep, v = line.partition("=")
+        if sep and k.strip() == key:
+            return v.strip()
+    raise KeyError(f"{key} missing from {OPERATOR_ENV}")
+
+
+def _is_live_starter(c: dict, bot: str) -> bool:
     """A bot auto-post whose VISIBLE content (HTML comments stripped) *leads* with
     `👀 reviewing`. Checking the lead — not mere presence of a marker/token — is
     what keeps a comment that merely *quotes* them (a completed 📋 review, a
     babysit reply) from false-matching and wedging pushes; only the reviewer's
     live placeholder starts this way, and it's DELETED on completion."""
-    if (c.get("author") or {}).get("login") != BOT_USER:
+    if (c.get("author") or {}).get("login") != bot:
         return False
     body = c.get("body") or ""
     if AUTO_POST_MARKER not in body:
@@ -91,7 +103,7 @@ PUSH_REASON = (
 TRIGGER_REASON = (
     "Re-review trigger blocked: a knightwatch review is already IN FLIGHT on this "
     "PR (the review bot has a live '👀 reviewing' placeholder up). Posting a "
-    "/srosro-review or /srosro-update-review now STACKS a second review behind the "
+    "whole-PR or incremental re-review trigger now STACKS a second review behind the "
     "running one — it reviews a possibly-stale head and deepens the ~40-min-per-slot "
     "queue.\n\n"
     "Assess and act:\n"
@@ -115,6 +127,11 @@ def main() -> int:
     if not (is_push or is_trigger):
         return 0
     try:
+        bot = operator_value("REVIEW_BOT_LOGIN")
+    except (OSError, KeyError) as e:
+        print(f"knightwatch gate: {e}", file=sys.stderr)
+        return 1
+    try:
         r = subprocess.run(
             ["gh", "pr", "view", "--json", "comments"],
             cwd=payload.get("cwd") or ".", capture_output=True, text=True, timeout=20,
@@ -125,7 +142,7 @@ def main() -> int:
 
     # In flight = a live `👀 reviewing` starter. (Queued-before-placeholder is
     # deliberately unmodeled — see the docstring — and covered by landing-side verify.)
-    if any(_is_live_starter(c) for c in comments):
+    if any(_is_live_starter(c, bot) for c in comments):
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "permissionDecision": "deny",

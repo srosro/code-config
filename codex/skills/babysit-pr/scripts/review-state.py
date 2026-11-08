@@ -6,14 +6,23 @@ import json
 import re
 import subprocess
 import sys
+from pathlib import Path
 
 
 SHA_PATTERNS = (
     re.compile(r"First review of (?:this PR|the PR).*?reviewed `([0-9a-f]{7,40})`", re.S),
     re.compile(r"Re-review of changes from `[^`]+` to `([0-9a-f]{7,40})`", re.S),
 )
-TRIGGER = re.compile(r"(?m)^/srosro-(?:update-)?review\s*$")
+OPERATOR_ENV = Path.home() / ".config" / "kitchen" / "operator.env"
 MARKER = "<!-- knightwatch-reviewer:auto-post -->"
+
+
+def operator_value(key):
+    for line in OPERATOR_ENV.read_text().splitlines():
+        k, sep, v = line.partition("=")
+        if sep and k.strip() == key:
+            return v.strip()
+    raise KeyError(f"{key} missing from {OPERATOR_ENV}")
 
 
 def load_pr(args):
@@ -55,6 +64,8 @@ def main():
     if not args.input and (not args.repo or args.pr is None):
         parser.error("--repo and --pr are required without --input")
 
+    prefix = re.escape(operator_value("REVIEW_CMD_PREFIX"))
+    trigger = re.compile(rf"(?m)^/{prefix}-(?:update-)?review\s*$")
     pr = load_pr(args)
     actor = expected_actor(args)
     comments = sorted(pr.get("comments", []), key=lambda item: item.get("createdAt", ""))
@@ -72,9 +83,9 @@ def main():
     head = pr.get("headRefOid", "")
     review_time = latest[0] if latest else ""
     trigger_after = any(
-        comment.get("createdAt", "") > review_time and TRIGGER.search(comment.get("body", ""))
+        comment.get("createdAt", "") > review_time and trigger.search(comment.get("body", ""))
         for comment in comments
-    ) if latest else any(TRIGGER.search(comment.get("body", "")) for comment in comments)
+    ) if latest else any(trigger.search(comment.get("body", "")) for comment in comments)
 
     result = {
         "state": pr.get("state"),

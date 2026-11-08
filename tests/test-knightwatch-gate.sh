@@ -5,6 +5,9 @@ HERE=$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 GATE="$HERE/../claude/hooks/knightwatch-inflight-push-gate.py"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
+export HOME="$TMP/home"   # test operator config: the bot login comes from here
+mkdir -p "$HOME/.config/kitchen"
+printf 'REVIEW_BOT_LOGIN=kwbot\nREVIEW_CMD_PREFIX=kw\n' > "$HOME/.config/kitchen/operator.env"
 AP='<!-- knightwatch-reviewer:auto-post -->'
 PH='<!-- knightwatch-reviewer:placeholder -->'
 
@@ -18,7 +21,7 @@ exit 1
 SH
 chmod +x "$SHIM/gh"
 
-bot() { printf '[{"author":{"login":"srosro"},"body":"%s"}]' "$1"; }
+bot() { printf '[{"author":{"login":"kwbot"},"body":"%s"}]' "$1"; }
 # real starter: bot auto-post whose visible content LEADS with 👀 reviewing
 INFLIGHT=$(bot "$AP\n$PH\n👀 reviewing — [sam bot](url)")
 # a COMPLETED bot review that quotes 👀 reviewing mid-body → must NOT block
@@ -52,8 +55,8 @@ row allow "$INFLIGHT" "git status"           "non-push command → allow"
 # The babysit prefixes every trigger post with KNIGHTWATCH_REVIEW_TRIGGER=1; the
 # gate keys off THAT marker (no command parsing). A real trigger's jq body carries
 # quotes — row()/hook() build the payload with jq so they survive.
-TRIG="KNIGHTWATCH_REVIEW_TRIGGER=1 jq -n '{body: \"/srosro-review\"}' | gh api repos/o/r/issues/1/comments --input -"
-UNMARKED="jq -n '{body: \"/srosro-review\"}' | gh api repos/o/r/issues/1/comments --input -"
+TRIG="KNIGHTWATCH_REVIEW_TRIGGER=1 jq -n '{body: \"/kw-review\"}' | gh api repos/o/r/issues/1/comments --input -"
+UNMARKED="jq -n '{body: \"/kw-review\"}' | gh api repos/o/r/issues/1/comments --input -"
 row deny  "$INFLIGHT" "$TRIG"     "in-flight + marked trigger → deny"
 row allow "$LANDED"   "$TRIG"     "no live starter + marked trigger → allow"
 row allow "$INFLIGHT" "$UNMARKED" "in-flight + UNMARKED trigger command → allow (marker is the only signal)"
@@ -76,6 +79,12 @@ body=$(GH_COMMENTS="$INFLIGHT" hook "git push" | python3 -c 'import sys,json;pri
 assert_contains "$body" "ScheduleWakeup"       "deny reason tells the LLM to set a timer"
 assert_contains "$body" "review-ready-LOCAL"   "deny reason covers the subagent path"
 assert_not_contains "$body" "sam bot"          "deny reason does NOT echo the comment body"
+
+# no operator config: a push or trigger fails loudly (exit 1, shown, not blocking); other commands don't read it
+rm "$HOME/.config/kitchen/operator.env"
+GH_COMMENTS="$INFLIGHT" hook "git push" >/dev/null 2>"$TMP/err"; assert_rc 1 $? "missing operator config + push → exit 1"
+assert_contains "$(cat "$TMP/err")" "operator.env" "missing-config error names the file"
+GH_COMMENTS="$INFLIGHT" hook "git status" >/dev/null 2>&1; assert_rc 0 $? "missing operator config + non-push → exit 0"
 
 # fragment registration + executable bit
 frag="$HERE/../claude/hooks/hooks.settings.json"
