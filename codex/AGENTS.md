@@ -60,7 +60,7 @@
 - SSH into another fleet host when its runtime, credentials, architecture, or
   tools are needed; do not hand the check back merely because it is remote.
   Run `hostname` first and never SSH to the current host. The canonical map is
-  `~/services/code-config/lib/fleet.sh`; keep it current.
+  `~/services/kitchen/src/claude_kitchen/tc/lib/fleet.sh` (kitchen's `tc`), reading the private host table; keep that table current.
 - Operator fleet and agent stewardship live in `~/.codex/OPERATOR.md` (installed by code-config-private); read it before any task that touches a local or Hermes agent, a fleet host, a deploy, or any fleet-wide agent operation - including aggregate requests such as "update all agents".
 - When `$cleanup` finds a cross-repository personal-config learning, use the
   session's slot number with `tc claim code-config <branch> <slot>` to

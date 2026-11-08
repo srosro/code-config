@@ -158,13 +158,6 @@ install-claude:
         echo "backups: $BACKUP_DIR"
     fi
 
-    # Put the tc CLI on PATH. lib/fleet.sh + lib/pick.sh resolve relative to the
-    # symlink target, so only the entrypoint needs linking.
-    BIN_DIR="$HOME/.local/bin"
-    mkdir -p "$BIN_DIR"
-    ln -sfn "{{justfile_directory()}}/tc" "$BIN_DIR/tc"
-    echo "linked cli tc"
-    case ":$PATH:" in *":$BIN_DIR:"*) ;; *) echo "note: $BIN_DIR is not on PATH" >&2 ;; esac
 
     # Source the fleet shell aliases (currently just `goclaude`) so it reaches the host's
     # interactive shell. Always seed the rc the active shell ($SHELL) reads — ~/.zshrc

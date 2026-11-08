@@ -140,13 +140,6 @@ grep -qF 'installed Superpowers plugin v6.3.0 at b36e0829c6d0140e93cfef2ca599b1b
 rm -rf "$tmp_codex_plugin"
 pass "Codex installs the pinned upstream Superpowers plugin and retires the stale source"
 
-# 3b. `just install` also symlinks the tc CLI into ~/.local/bin (entrypoint only;
-#     lib/fleet.sh + lib/pick.sh resolve relative to the symlink target).
-[[ -L "$tmp/.local/bin/tc" ]] || fail "tc not linked under $tmp/.local/bin/"
-tc_target=$(readlink "$tmp/.local/bin/tc")
-[[ "$tc_target" == "$PWD/tc" ]] || fail "$tmp/.local/bin/tc points at '$tc_target', expected '$PWD/tc'"
-pass "just install symlinks the tc CLI into ~/.local/bin"
-
 # 3b-tmux. `just install` symlinks ~/.tmux.conf to the repo file and tic's an
 #     xterm-ghostty terminfo entry carrying Hls (OSC 8) into ~/.terminfo — the
 #     declarative replacement for tc's removed per-connect terminfo prelude. The
