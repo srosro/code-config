@@ -100,6 +100,8 @@ install-claude:
     # git worktrees" rule (denies CREATION only; remove/list/prune stay for cleanup).
     # autoMemoryEnabled=false: learnings go to the runbook wikis and agent repos the
     # capture hooks name, never to ~/.claude/projects/*/memory/.
+    # env.MCP_TIMEOUT=90000: Claude Code gives an MCP server 30s to answer at
+    # startup; swarm's takes 11-22s and missed it on a restart. Other env keys stay.
     jq -s '
       def dedupe_keep_order: reduce .[] as $x ([]; if any(.[]; . == $x) then . else . + [$x] end);
       .[0] as $cur | .[1] as $frag | .[2] as $deny
@@ -111,6 +113,7 @@ install-claude:
       | .permissions = (.permissions // {})
       | .permissions.deny = (((.permissions.deny // []) + ($deny.permissions.deny // [])) | unique)
       | .autoMemoryEnabled = false
+      | .env = ((.env // {}) + {"MCP_TIMEOUT": "90000"})
     ' "$SETTINGS" "$REPO/hooks/hooks.settings.json" "$REPO/settings.deny.json" > "$tmp_settings"
     mv "$tmp_settings" "$SETTINGS"
     chmod 600 "$SETTINGS"

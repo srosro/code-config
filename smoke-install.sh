@@ -75,6 +75,10 @@ pass "just install adds an idempotent git-worktree-add deny to settings.json (re
   || fail "settings.json does not turn Claude auto-memory off"
 pass "just install turns Claude auto-memory off in settings.json"
 
+[[ "$(jq -r '.env.MCP_TIMEOUT' "$tmp/.claude/settings.json")" == "90000" ]] \
+  || fail "settings.json does not raise the MCP startup timeout"
+pass "just install sets MCP_TIMEOUT=90000 in settings.json"
+
 # The aggregate install wires Codex-native guidance and skills. It must not
 # import Claude references/skills or replace machine-local Codex state.
 [[ -L "$tmp/.codex/AGENTS.md" ]] || fail "Codex AGENTS.md not linked"
