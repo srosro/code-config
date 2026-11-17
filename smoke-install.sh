@@ -71,6 +71,10 @@ jq -e '.permissions.deny | index("Bash(git worktree add:*)")' "$tmp/.claude/sett
   || fail "settings.json wrongly denies git worktree remove/list/prune"
 pass "just install adds an idempotent git-worktree-add deny to settings.json (remove/list/prune stay allowed)"
 
+[[ "$(jq '.autoMemoryEnabled' "$tmp/.claude/settings.json")" == "false" ]] \
+  || fail "settings.json does not turn Claude auto-memory off"
+pass "just install turns Claude auto-memory off in settings.json"
+
 # The aggregate install wires Codex-native guidance and skills. It must not
 # import Claude references/skills or replace machine-local Codex state.
 [[ -L "$tmp/.codex/AGENTS.md" ]] || fail "Codex AGENTS.md not linked"
